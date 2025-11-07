@@ -8,7 +8,9 @@
 ; We are using unsigned integers
 ; Replace with your application code
 .include "m2560def.inc"
+.include "library.inc"
 .include "random_number.inc"
+
 
 ; We are using register X for reading maps.
 ; We are using register Y for writing maps.
