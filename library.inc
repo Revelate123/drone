@@ -1,5 +1,7 @@
 .include "m2560def.inc"
 
+jmp end_lib
+
 .macro swap_two_regs
 	mov temp, @0
 	mov @0, @1
@@ -23,7 +25,7 @@
 ; register Y.
 ; Parameters:
 ;     Address of coordinate in data memory = YH:YL
-;     map_offset = r25:r24
+;     map_start = r25:r24
 ; Returns:
 ;     x in r21
 ;     y in r22
@@ -33,29 +35,27 @@ get_coords_prologue:
 	push YH
 	push ZL
 	push ZH
-	push r21
-	push r22
 	push r23
 	push r24
 	push r25
 get_coords_body:
-	mov ZH, YH
-	mov ZL, YL
-	adiw Y , -map_offset
+	mov ZL, r24
+	mov ZH, r25
+	adiw r25:r24, 1
 	sub YL, r24
 	sbc YH, r25
 	clr r22
 			
-	loop:
+	gc_loop:
 	inc r22
-	lpm r23, Z
+	ld r23, Z
 	mul r22, r23
 	mov r23, r0
-	cp r23, YL
-	brlt loop
+	cp  YL, r23
+	brsh gc_loop
 	dec r22
 	; Now y is correct in r22
-	lpm r23, Z
+	ld r23, Z
 	mul r22, r23
 	sub YL, r0
 	; now YL contains just the x coord
@@ -64,8 +64,6 @@ get_coords_epilogue:
 	pop r25
 	pop r24
 	pop r23
-	pop r22
-	pop r21
 	pop ZH
 	pop ZL
 	pop YH
@@ -79,3 +77,4 @@ get_coords_epilogue:
 ;	@2 - y
 ;	returns memory_location
 
+end_lib:
