@@ -1,4 +1,4 @@
-; Takes as input the value stored in R20 and returns to the same register the next random number in the sequence.
+; A function which takes as input the value stored in R20 and returns to the same register the next random number in the sequence.
 
 .include "m2560def.inc"
 
