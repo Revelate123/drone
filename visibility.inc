@@ -1,14 +1,19 @@
+; Determines what is visible
+
+
 .include "m2560def.inc"
 
-; Whats reachable?
+.equ visibility_map_offset = 250
+.equ explored_map_offset = 500
 
-.def x1 = ..
-
-
-
+.def dist = r16
 
 
-;distance(x1, y1, z1, x2, y2, z2):
+
+
+; Calculate distance between two points
+; Stores output in register r16
+distance(x1, y1, z1, x2, y2, z2):
 	cp x1, x2
 	brsh next
 	swap_two_regs x1, x2
@@ -24,22 +29,22 @@ next:
 	; edits the visibility map 
 check_visible_no_block(current_location, v):
 	clear visiblity map
-	ldi XL, low(main_map_start)
-	ldi XH, high(main_map_start)
+	ldi YL, low(main_map_start)
+	ldi YH, high(main_map_start)
 	for x in range(15):
 		for y in range(15):
 			ld z, X+
 			c = distance(current_location, x, y, z)
 			if c < v:
-				st 1, X+250 ; confirm that doesnt change X 
+				st 1, Y + visibility_map_offset
 	check_visibile_blocking();
 
 check_visible_blocking(current_location): 
-	ldi XL, low(main_map_start)
-	ldi XH, high(main_map_start)
+	ldi YL, low(main_map_start)
+	ldi YH, high(main_map_start)
 	for x in range(15):
 		for y in range(15):
-			ld z, X+
+			ld z, Y+
 			c = distance(current_location, x, y, z)
 			if c < v:
-				st 1, X+250 ; confirm that doesnt change X 
+				st 1, Y + visibility_map_offset
