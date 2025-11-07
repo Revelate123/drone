@@ -6,6 +6,8 @@ jmp end_visibility
 .equ visibility_map_offset = 250
 .equ explored_map_offset = 500
 
+.def visL = r14
+.def visH = r15
 .def distL = r16
 .def distH = r17
 .def x1 = r18
@@ -65,7 +67,8 @@ distance_epilogue:
 	pop YL
 	ret
 
-
+; Clears the visibility map
+; UNTESTED
 clear_visibility_map:
 clear_visibility_map_prologue:
 	push YL
@@ -74,12 +77,12 @@ clear_visibility_map_prologue:
 	push r19
 
 clear_visibility_map_body:
-	ld YL, low(visibility_map_size)
-	ld YH, high(visibility_map_size)
-	ldd r18, Y+
+	ldi YL, low(visibility_map_size)
+	ldi YH, high(visibility_map_size)
+	ld r18, Y+
 	ldi r19, 0
 cvm_loop:
-	st Y+, 0
+	st Y+, r19
 	dec r18
 	brne cvm_loop
 clear_visibility_map_epilogue:
@@ -90,13 +93,59 @@ clear_visibility_map_epilogue:
 	ret
 
 ; visibility without blocking
-	; edits the visibility map 
-
+; edits the visibility map 
+; takes as parameters the current location
+; x1 = r18
+; y1 = r19
+; z1 = r20
+; visL = r14
+; visH = r15
 check_visible_no_block:
-	rcall clear_visibility_map
-	ldi YL, low(main_map_start)
-	ldi YH, high(main_map_start)
+check_visible_no_block_prologue:
+	push YL
+	push YH
+	push x2
+	push y2
+	push z2
+	push r24
+	push r25
+	push r26
+	
+check_visible_no_block_body:
+		rcall clear_visibility_map
+		ldi YL, low(main_map_size)
+		ldi YH, high(main_map_size)
+		ldi ZL, low(visibility_map_start)
+		ldi ZH, high(visibility_map_start)
+		ldi r24, low(main_map_size)
+		ldi r25, high(main_map_size)
+		ld r26, Y+
+		mul r26, r26
+		mov r26, r0
+	cvnbb_loop:
+		call get_coords ;stores x2,y2 values
+		ld z2, Y+		; stores z2
+		call distance	; stores distL:distH using all coords stored in registers
+		cp  visL, distL 
+		cpc visH, distH
+		brlt not_visible
+		ldi r21, 1		; r21 no longer required for the rest of loop
+		st Z, r21
+	not_visible:
+		adiw Z, 1
+		dec r26
+		brne cvnbb_loop
 
+check_visible_no_block_epilogue:
+	pop r26
+	pop r25
+	pop r24
+	pop z2
+	pop y2
+	pop x2
+	pop YH
+	pop YL
+	ret
 ;check_visible_no_block(current_location, v):
 ;	clear visiblity map
 
