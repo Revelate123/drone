@@ -17,25 +17,25 @@
 
 ; Is the main map
 .dseg
-.org 0
+.org 0x0200
 main_map_size: .byte 1
 main_map_start: .byte 15*15
 
 
 
 ; Is the copy of the map for visibility
-.org 250
+.org 0x0200+250
 visibility_map_size: .byte 1
 visibility_map_start: .byte 15*15
 
 ;
-.org 500
+.org 0x0200+500
 explored_map_size: .byte 1
 explored_map_start: .byte 15*15
 
 
 ; Saved route from route generation function
-.org 750
+.org 0x0200+750
 route_size: .byte 1
 route_locations: .byte 15*15*3 ; Save x, y, z for each location (worst case we look at every location, but very unlikely to happen)
 
@@ -50,6 +50,8 @@ ldi ZL , low(map_size<<1)
 ldi ZH, high(map_size<<1)
 LPM r16, Z
 sts main_map_size, r16
+sts visibility_map_size, r16
+sts explored_map_size, r16
 ldi ZL, low(map<<1)
 ldi ZH, high(map<<1)
 ldi YL, low(main_map_start)
@@ -60,6 +62,6 @@ store_map_loop:
 	dec r16
 	brne store_map_loop
 
-
+nop
 
 
