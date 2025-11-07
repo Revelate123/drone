@@ -29,6 +29,17 @@ jmp end_lib
 ; Returns:
 ;     x in r21
 ;     y in r22
+; Example for 7x7 map:
+; ldi YL, low(main_map_start)
+; ldi YH, high(main_map_start)
+; adiw Y, 8
+; ldi r24, low(main_map_size)
+; ldi r25, high(main_map_size)
+; call get_coords
+; 
+; Output:
+; r21 = 1
+; r22 = 1
 get_coords:
 get_coords_prologue:
 	push YL
