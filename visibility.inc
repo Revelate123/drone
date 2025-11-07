@@ -80,6 +80,8 @@ clear_visibility_map_body:
 	ldi YL, low(visibility_map_size)
 	ldi YH, high(visibility_map_size)
 	ld r18, Y+
+	mul r18, r18
+	mov r18, r0
 	ldi r19, 0
 cvm_loop:
 	st Y+, r19
