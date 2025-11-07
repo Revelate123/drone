@@ -43,7 +43,7 @@ route_locations: .byte 15*15*3 ; Save x, y, z for each location (worst case we l
 .org 0x1000
 main:
 ; Map from project brief
-map_size: .db 7*7
+map_size: .db 7
 map: .db 0,0,0,0,0,0,0 , 0,2,2,2,2,2,0 , 0,2,4,4,4,2,0 , 0,2,4,6,4,2,0 , 0,2,4,4,4,2,0 ,  0,2,2,2,2,2,0 , 0,0,0,0,0,0,0
 
 ldi ZL , low(map_size<<1)
