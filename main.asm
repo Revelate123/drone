@@ -56,6 +56,8 @@ ldi ZL, low(map<<1)
 ldi ZH, high(map<<1)
 ldi YL, low(main_map_start)
 ldi YH, high(main_map_start)
+mul r16, r16
+mov r16, r0
 store_map_loop:
 	LPM r17, Z+
 	st Y+, r17
