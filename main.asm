@@ -32,7 +32,10 @@ explored_map_size: .byte 1
 explored_map_start: .byte 15*15
 
 
-
+; Saved route from route generation function
+.org 750
+route_size: .byte 1
+route_locations: .byte 15*15*3 ; Save x, y, z for each location (worst case we look at every location, but very unlikely to happen)
 
 
 
