@@ -1,29 +1,54 @@
 ; Determines what is visible
 
 
-.include "m2560def.inc"
+jmp end_visibility
 
 .equ visibility_map_offset = 250
 .equ explored_map_offset = 500
 
 .def dist = r16
+.def x1 = r17
+.def y1 = r18
+.def z1 = r19
+.def x2 = r20
+.def y2 = r21
+.def z2 = r22
 
 
 
-
-; Calculate distance between two points
+; Calculate distance^2 between two points
 ; Stores output in register r16
-distance(x1, y1, z1, x2, y2, z2):
-	cp x1, x2
-	brsh next
-	swap_two_regs x1, x2
-next:
-	sub x1, x2
-	mul x1, x2
+;distance(x1, y1, z1, x2, y2, z2):
+
+distance_prologue:
+	push YL
+	push YH
+	push r16
+	push r17
+	push r18
+	push r19
+	push r20
+	push r21
+	push r22
+	push r23
+	push r24
+	push r25
+	in YL, SPL
+	in YH, SPH
+	sbiw Y, 8
+	out SPH, YH
+	out SPL, YL
+
+distance:
+		
 
 
-	cp y1, y2
-	brlt swapy
+
+		cp y1, y2
+		brlt swapy
+
+distance_epilogue:
+	
 
 ; visibility without blocking
 	; edits the visibility map 
@@ -48,3 +73,6 @@ check_visible_blocking(current_location):
 			c = distance(current_location, x, y, z)
 			if c < v:
 				st 1, Y + visibility_map_offset
+
+
+end_visibility:
