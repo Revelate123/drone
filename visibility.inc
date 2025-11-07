@@ -21,9 +21,9 @@ jmp end_visibility
 ; Stores output in register r17:r16
 ; distance(x1, y1, z1, x2, y2, z2):
 ; tests:
-; (x1, y1, z1) = (3, 4, 5)
-; (x2, y2, z2) = (15, 7, 15)
-; returns 253
+;     (x1, y1, z1) = (3, 4, 5)
+;     (x2, y2, z2) = (15, 7, 15)
+;     returns 253
 distance:
 distance_prologue:
 	push YL
@@ -65,12 +65,41 @@ distance_epilogue:
 	pop YL
 	ret
 
+
+clear_visibility_map:
+clear_visibility_map_prologue:
+	push YL
+	push YH
+	push r18
+	push r19
+
+clear_visibility_map_body:
+	ld YL, low(visibility_map_size)
+	ld YH, high(visibility_map_size)
+	ldd r18, Y+
+	ldi r19, 0
+cvm_loop:
+	st Y+, 0
+	dec r18
+	brne cvm_loop
+clear_visibility_map_epilogue:
+	pop r19
+	pop r18
+	pop YH
+	pop YL
+	ret
+
 ; visibility without blocking
 	; edits the visibility map 
+
+check_visible_no_block:
+	rcall clear_visibility_map
+	ldi YL, low(main_map_start)
+	ldi YH, high(main_map_start)
+
 ;check_visible_no_block(current_location, v):
 ;	clear visiblity map
-;	ldi YL, low(main_map_start)
-;	ldi YH, high(main_map_start)
+
 ;	for x in range(15):
 ;		for y in range(15):
 ;			ld z, X+
