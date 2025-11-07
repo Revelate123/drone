@@ -1,0 +1,33 @@
+<ASSEMBLER_INFO>
+ <VERSION>2.2.8</VERSION>
+ <DEVICE>"ATmega2560"</DEVICE>
+ <WORKING_DIR>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\Debug</WORKING_DIR>
+ <INCLUDE_PATH>
+  <DIR>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc</DIR>
+  <DIR>C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avrassembler\Include</DIR>
+  <DIR></DIR>
+ </INCLUDE_PATH>
+ <SOURCE_FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\main.asm</SOURCE_FILE>
+ <INCLUDED_FILES>
+  <FILE>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc</FILE>
+  <FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\random_number.inc</FILE>
+ </INCLUDED_FILES>
+ <OBJECT_FILES>
+  <FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\Debug\Assignment.obj</FILE>
+ </OBJECT_FILES>
+ <HEX_FILES>
+  <FILE>Assignment.hex</FILE>
+ </HEX_FILES>
+ <OUTPUT_FILES>
+  <FILE>Assignment.map</FILE>
+  <FILE>Assignment.lss</FILE>
+ </OUTPUT_FILES>
+ <LABELS>
+  <EOF><FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\random_number.inc</FILE><LINE>43</LINE></EOF>
+  <next_rand><FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\random_number.inc</FILE><LINE>7</LINE></next_rand>
+  <Prologue><FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\random_number.inc</FILE><LINE>8</LINE></Prologue>
+  <functionBody><FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\random_number.inc</FILE><LINE>18</LINE></functionBody>
+  <Epilogue><FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\random_number.inc</FILE><LINE>33</LINE></Epilogue>
+  <main><FILE>C:\Users\thoma\OneDrive\Documents\COMP9032\Assignment\Assignment\main.asm</FILE><LINE>13</LINE></main>
+ </LABELS>
+</ASSEMBLER_INFO>
