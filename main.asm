@@ -39,6 +39,11 @@ explored_map_start: .byte 15*15
 route_size: .byte 1
 route_locations: .byte 15*15*3 ; Save x, y, z for each location (worst case we look at every location, but very unlikely to happen)
 
+
+.org 0x0200+750+675+1
+cur_route_size: .byte 1
+cur_route_locations: .byte 20
+
 .cseg
 .org 0x1000
 main:
