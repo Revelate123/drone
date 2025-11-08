@@ -50,6 +50,8 @@ get_coords_prologue:
 	push r24
 	push r25
 get_coords_body:
+	ldi r24, low(main_map_size)
+	ldi r25, high(main_map_size)
 	mov ZL, r24
 	mov ZH, r25
 	adiw r25:r24, 1
@@ -80,6 +82,24 @@ get_coords_epilogue:
 	pop YH
 	pop YL
 	ret
+	
+; Loads offset for coordinates
+; given in registers r21, r22 and where XH:XL are start of
+; map_size.
+; Stores offset in r6
+get_address_offset:
+get_address_prologue:
+	push r16
+get_address_body:
+	clr r6
+	lds r16, main_map_start
+	mul r22, r16 ; multiply y by row length
+	add r6, r0
+	add r6, r21 ; add the x step
+get_address_epilogue:
+	pop r16
+	ret
+
 	
 
 ;get_value_at_coords:
