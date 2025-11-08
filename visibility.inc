@@ -148,26 +148,189 @@ check_visible_no_block_epilogue:
 	pop YH
 	pop YL
 	ret
-;check_visible_no_block(current_location, v):
-;	clear visiblity map
 
-;	for x in range(15):
-;		for y in range(15):
-;			ld z, X+
-;			c = distance(current_location, x, y, z)
-;			if c < v:
-;				st 1, Y + visibility_map_offset
-;	check_visibile_blocking();
-;
-;check_visible_blocking(current_location): 
-;	ldi YL, low(main_map_start)
-;	ldi YH, high(main_map_start)
-;	for x in range(15):
-;		for y in range(15):
-;			ld z, Y+
-;			c = distance(current_location, x, y, z)
-;			if c < v:
-;				st 1, Y + visibility_map_offset
+.macro compute_bound
+	mov temp, x2
+	subi temp, -@0
+	sub temp, x1
+	mov lower_bound_X, temp
+	mov temp, y2
+	subi temp, -@1
+	sub temp, y1
+	mov lower_bound_Y, temp
+.endmacro
+
+.def upper_bound_X = r14
+.def upper_bound_Y = r15
+.def lower_bound_X = r16
+.def lower_bound_Y = r17
+.def x_step = r25
+.def y_step = r26
+
+; Takes as input the current location as an (x1,y1,z1)
+; and blocker location (x2,y2,z2)
+calc_blocking_bounds:
+calc_blocking_bounds_prologue:
+	push YL
+	push YH
+	push r14
+	push r15
+	push r16
+	push r17
+	; push r18
+	; push r19
+	; push r20
+	; push r21
+	; push r22
+	; push r23
+	push r24
+	push r25
+	push r26
+
+calc_blocking_bounds_body:
+	;multiply coordinate system by two
+	;there are four corners to each cell.
+	;draw a line from the centre of the current cell
+	;to the two relevant corners of the blocking cell.
+	;Compute two ratios of H/L slopes in 2Dimensions.
+	;Compare these ratios with other cells. 
+	;If it is within the bounds of these two ratios, it 
+	;can be blocked. Else it can't
+	; cur_loc, target_loc
+
+	; .def visL = r14
+	; .def visH = r15
+	; .def distL = r16
+	; .def distH = r17
+	; .def x1 = r18
+	; .def y1 = r19
+	; .def z1 = r20
+	; .def x2 = r21
+	; .def y2 = r22
+	; .def z2 = r23
+	; .def temp = r24
+
+	mul x1, x1
+	mov x1, r0
+	mul y1, y1
+	mov y1, r0
+	;mul z1, z1
+	;mov z1, r0
+	mul x2, x2
+	mov x2, r0
+	mul y2, y2
+	mov y2, r0
+	;mul z2, z2
+	;mov z2, r0
+
+	;cur_loc*2
+	;target_loc*2
+
+
+
+cp x2, x1
+brlt x2_lower
+	cp y2, y1
+	brlt y2_lower_1
+	;if x1 < x2 and y1 < y2:
+		;top right quadrant
+		; upper_bound = target_loc + (-1,1)
+		compute_bound -1, 1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
+		compute_bound 1, -1
+		ldi x_step, 1
+		ldi y_step, 1
+		rjmp cbbb_end
+
+		; lower_bound = target_loc + (1,-1)
+		; lower_bound_X = sub x2+1, x1
+		; lower_bound_Y = sub y2-1, y1
+
+	y2_lower_1:
+	;elif x1 < x2 and y1 > y2:
+		;bottom right quadrant
+		; upper_bound = target_loc + (-1,-1)
+		; lower_bound = target_loc + (1,1)
+		; x_step = 1
+		; y_step = -1
+		compute_bound -1, -1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
+		compute_bound 1, 1
+		ldi x_step, 1
+		ldi y_step, -1
+		rjmp cbbb_end
+
+x2_lower:
+	cp y2, y1
+	brlt y2_lower_2
+	;elif x1 > x2 and y1 > y2:
+		; bottom left quadrant
+		; upper_bound = target_loc + (1,-1)
+		; lower_bound = target_loc + (-1,1)
+		; x_step = -1
+		; y_step = -1
+		compute_bound 1, -1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
+		compute_bound -1, 1
+		ldi x_step, -1
+		ldi y_step, -1
+		rjmp cbbb_end
+	y2_lower_2:
+	;elif x1 > x2 and y1 < y2:
+		; top left quadrant
+		; upper_bound = target_loc + (1,1)
+		; lower_bound = target_loc + (-1,-1)
+		; x_step = -1
+		; y_step = 1
+		compute_bound 1, 1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
+		compute_bound -1, -1
+		ldi x_step, -1
+		ldi y_step, 1
+		rjmp cbbb_end
+
+	; elif x1 == x2 and y1 < y2:
+	; 	on a straight line up
+; 
+	; elif x1 == x2 and y1 < y2:
+	; 	on a straight line down
+; 
+	; elif x1 < x2 and y1 == y2:
+	; 	on a straight line right
+; 
+	; elif x1 < x2 and y1 == y2:
+	; 	on a straight line left
+
+cbbb_end:
+	; Now have two bounds, the current location, blocking start location, x_step, y_step
+	; call the next blocking function
+
+calc_blocking_bounds_epilogue:
+pop r26
+pop r25
+pop r24
+; pop r23
+; pop r22
+; pop r21
+; pop r20
+; pop r19
+; pop r18
+pop r17
+pop r16
+pop r15
+pop r14
+pop YH
+pop YL
+ret
+
+
+
+
+
 
 
 end_visibility:
