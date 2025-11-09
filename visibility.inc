@@ -103,16 +103,22 @@ check_visible_no_block:
 check_visible_no_block_prologue:
 	push YL
 	push YH
-	push x2
-	push y2
-	push z2
+	push r14
+	push r15
+	push r16
+	push r17
+	push r18
+	push r19
+	push r20
+	push r21
+	push r22
+	push r23
 	push r24
 	push r25
 	push r26
+	push r27
 	push ZH
 	push ZL
-	push r16
-	push r17
 	
 check_visible_no_block_body:
 		rcall clear_visibility_map
@@ -138,18 +144,26 @@ check_visible_no_block_body:
 		brne cvnbb_loop
 
 check_visible_no_block_epilogue:
-pop r17
-pop r16
+
 pop ZL
 pop ZH
-	pop r26
-	pop r25
-	pop r24
-	pop z2
-	pop y2
-	pop x2
-	pop YH
-	pop YL
+pop r27
+pop r26
+pop r25
+pop r24
+pop r23
+pop r22
+pop r21
+pop r20
+pop r19
+pop r18
+pop r17
+pop r16
+pop r15
+pop r14
+pop YH
+pop YL
+
 	ret
 
 ; Computes the bounds and stores results in registers
