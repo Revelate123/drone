@@ -3,13 +3,13 @@
 jmp end_lib
 
 .macro swap_two_regs
-	mov temp, @0
+	mov r24, @0
 	mov @0, @1
-	mov @1, temp
+	mov @1, r24
 .endmacro
 
 ; Computes the square difference between two values
-; e.g. (x1 - x2)^2 and stores the result in @0
+; e.g. (x1 - x2)^2 and stores the result in @0 may swap @0 and @1
 .macro square_diff
 	cp @0, @1
 		brsh next
@@ -25,7 +25,6 @@ jmp end_lib
 ; register Y.
 ; Parameters:
 ;     Address of coordinate in data memory = YH:YL
-;     map_start = r25:r24
 ; Returns:
 ;     x in r21
 ;     y in r22
@@ -33,8 +32,6 @@ jmp end_lib
 ; ldi YL, low(main_map_start)
 ; ldi YH, high(main_map_start)
 ; adiw Y, 8
-; ldi r24, low(main_map_size)
-; ldi r25, high(main_map_size)
 ; call get_coords
 ; 
 ; Output:
@@ -92,7 +89,7 @@ get_address_prologue:
 	push r16
 get_address_body:
 	clr r6
-	lds r16, main_map_start
+	lds r16, main_map_size
 	mul r22, r16 ; multiply y by row length
 	add r6, r0
 	add r6, r21 ; add the x step
