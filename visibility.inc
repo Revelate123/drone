@@ -109,6 +109,10 @@ check_visible_no_block_prologue:
 	push r24
 	push r25
 	push r26
+	push ZH
+	push ZL
+	push r16
+	push r17
 	
 check_visible_no_block_body:
 		rcall clear_visibility_map
@@ -134,6 +138,10 @@ check_visible_no_block_body:
 		brne cvnbb_loop
 
 check_visible_no_block_epilogue:
+pop r17
+pop r16
+pop ZL
+pop ZH
 	pop r26
 	pop r25
 	pop r24
