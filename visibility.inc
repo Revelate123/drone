@@ -147,6 +147,11 @@ check_visible_no_block_epilogue:
 	pop YL
 	ret
 
+; Computes the bounds and stores results in registers
+; lower_bound_X and lower_bound_Y
+;.def lower_bound_X = r16
+;.def lower_bound_Y = r17
+;.def temp = r24
 .macro compute_bound
 	mov temp, x2
 	subi temp, -@0
@@ -163,7 +168,7 @@ check_visible_no_block_epilogue:
 .def lower_bound_X = r16
 .def lower_bound_Y = r17
 .def x_step = r25
-.def edge_of_map = r26
+.def edge_of_map = r24
 
 ; Takes as input the current location as an (x1,y1,z1)
 ; and blocker location (x2,y2,z2)
@@ -195,12 +200,12 @@ calc_blocking_bounds_prologue:
 ;can be blocked. Else it can't
 ; cur_loc, target_loc
 calc_blocking_bounds_body:
-	add x1, x1
-	add y1, y1
-	add z1, z1
-	add x2, x2
-	add y2, y2
-	add z2, z2
+	lsl x1
+	lsl y1
+	lsl z1
+	lsl x2
+	lsl y2
+	lsl z2
 
 cp x2, x1
 brlt x2_lower
@@ -259,14 +264,21 @@ x2_lower:
 	; 	on a straight line left
 
 cbbb_end:
-	lsr upper_bound_X
-	lsr upper_bound_Y
-	lsr lower_bound_X
-	lsr lower_bound_Y
+	;lsr upper_bound_X
+	;lsr upper_bound_Y
+	;lsr lower_bound_X
+	;lsr lower_bound_Y
 	mov r8, x_step
 	mov r9, edge_of_map
 	; Now have two bounds, the current location, blocking start location, x_step, edge_of_map
 	; call the next blocking function
+	lsr x1
+	lsr y1
+	lsr z1
+	lsr x2
+	lsr y2
+	lsr z2
+	call scan_from_blocking_point
 
 calc_blocking_bounds_epilogue:
 pop r26
@@ -286,45 +298,22 @@ pop YH
 pop YL
 ret
 
-.macro init_scan_blocking
-ldi XL, low(main_map_size)
-	ldi XH, high(main_map_size)
-	call get_address_offset ; stored in r6
-	ld r2, X+
-	add r2, r6
-	clr r7
-	add XL, r6
-	adc XH, r7
-	ldi ZL, low(visibility_map_start)
-	ldi ZH, high(visibility_map_start)
-	add ZL, r6
-	adc ZH, r7
 
-; This block of code sets the bounds as either 0 or 1
-	cpi x_step, 1
-	brne set_min
-set_max:
-	ldi edge_of_map, 255
-	rjmp set_complete
-set_min:
-	ldi edge_of_map, 0
-set_complete:
-
-; store blocking coordinates in different registers
-	mov r10, r21 
-	mov r11, r22
-	mov r12, r23
-
-	mov r3, lower_bound_X
-	mov r4, lower_bound_Y
-
-rcall slope
-mov r8, r13
-mov r9, r14
-.endmacro
-
+; Moves registers X and Z to the next locations on the map.
+; Uses registers:
+; r31 = ZH 
+; r30 = ZL
+; r27 = XH
+; r26 = XL
+; r9 = edge_of_map
+; r8 = x_step
+.def  x_step = r8
+.def  edge_of_map = r9
+; r2 = current linear position in map
 .macro next_el 
-	cpi x_step, 1
+	clr r12
+	inc r12
+	cp x_step, r12
 	brne dec_YZ
 inc_YZ:
 	adiw Z, 1
@@ -341,37 +330,150 @@ dec_YZ:
 .endmacro
 
 
+
+; r31 = ZH
+; r30 = ZL
+; r29 = YH
+; r28 = YL
+; r27 = XH
+; r26 = XL
+
+; r23 = z_block (input)
+; r22 = y_block (input)
+; r21 = x_block (input)
+; r20 = z_drone (input)
+; r19 = y_drone (input)
+; r18 = x_drone (input)
+; r17 = lower_bound_Y (input)
+; r16 = lower_bound_X (input)
+; r15 = upper_bound_Y (input)
+; r14 = upper_bound_X (input) 
+; r13 =
+; r12 = temporary
+; r11 = slope to block
+; r10 = slope to block
+; r9 = x_step (input)
+; r8 = edge_of_map (input)
+; r7 = temporary ** slope outputs here
+; r6 = address_offset ** slope outputs here
+; r5 = blocking check output
+; r4 = lower_bound_Y **
+; r3 = lower_bound_X **
+; r2 = current linear position in map
+.equ block_slope_Z = 1
+.equ block_slope_XY = 2
 scan_from_blocking_point:
 scan_from_blocking_point_prologue:
 	push YL
 	push YH
+	push r2
+	push r3
+	push r4
+	push r5
 	push r6
+	push r7
+	push r8
+	push r9
+	push r10
+	push r11
+	push r12
+	push r13
+	push r14
+	push r15
 	push r16
+	push r17
+	push r18
+	push r19
+	push r20
+	push r21
+	push r22
+	push r23
+
 
 scan_from_blocking_point_body:
-	init_scan_blocking
+init_scan_blocking:
+	ldi XL, low(main_map_size)
+	ldi XH, high(main_map_size)
+	call get_address_offset ; stored in r6
+	ld r2, X+ ; used to compare with map bounds
+	
+	clr r7
+	add XL, r6
+	adc XH, r7
+	ldi ZL, low(visibility_map_start)
+	ldi ZH, high(visibility_map_start)
+	add ZL, r6
+	adc ZH, r7
+
+; This block of code sets the bounds as either 0 or 1
+	clr r7
+	inc r7
+	cp x_step, r7
+	brne set_min
+set_max:
+	mul r2, r2
+	mov edge_of_map, r0
+	rjmp set_complete
+set_min:
+	clr edge_of_map
+set_complete:
+	
+	add r2, r6 
+	mov r3, lower_bound_X
+	mov r4, lower_bound_Y
+	mov r12, r23
+
+rcall slope ; stores results in r6 and r7
+mov r10, r6
+mov r11, r7
 
 sfbpb_loop:
-	call get_coords ;stores x2,y2 values
+	mov YH, XH
+	mov YL, XL
+	call get_coords ;stores x2,y2 values based on Y
 	ld r16, Z 
 	cpi r16, 0
-	breq not_blocked
+	breq out_of_bounds
 	rcall check_bounds
 	mov r16, r5
 	cpi r16, 0
-	breq not_blocked
+	breq out_of_bounds
 	ld z2, X		; stores z2
-	call slope
+	call slope ; stores results in r6 and r7
 	call blocked
-not_blocked:
+out_of_bounds:
 	next_el
 
 sfbpb_end:
 scan_from_blocking_point_epilogue:
+pop r23
+pop r22
+pop r21
+pop r20
+pop r19
+pop r18
+pop r17
 pop r16
+pop r15
+pop r14
+pop r13
+pop r12
+pop r11
+pop r10
+pop r9
+pop r8
+pop r7
 pop r6
+pop r5
+pop r4
+pop r3
+pop r2
 pop YH
 pop YL
+ret
+
+
+
 
 ; Bounds are stored in registers:
 .def low_X = r3
@@ -382,7 +484,7 @@ pop YL
 .def cur_Y = r17
 ; (x1,y1,z1) = drone location
 ; (x2,y2,z2) = cur location considered
-; returns bool to register r5
+; returns bool to register r5 (1 if within bounds, 0 if outside)
 check_bounds:
 check_bounds_prologue:
 	push r3
@@ -407,8 +509,7 @@ mul high_X, cur_Y
 mov high_X, r0
 cp high_Y, high_X 
 brsh less_than_upper
-ldi r24, 0
-mov r5, r24
+clr r5
 rjmp check_bounds_epilogue
 less_than_upper:
 mul low_Y, cur_X 
@@ -416,9 +517,12 @@ mov low_Y, r0
 mul low_X, cur_Y
 mov low_X, r0
 cp low_X, low_Y
-brsh check_bounds_epilogue
-ldi r24, 0
-mov r5, r24
+brsh set_true
+clr r5
+rjmp check_bounds_epilogue
+set_true:
+	clr r5
+	inc r5
 check_bounds_epilogue:
 	pop r24
 	pop r23
@@ -442,18 +546,18 @@ mov @0, r0
 mul @2, @1
 mov @2, r0
 cp @2, @0
-brlt cs_end
+brsh cs_end
 ldi r21, 0
 st Z, r21
 cs_end:
 .endmacro
 
 ; Register inputs:
-; r8  = height difference drone to block
-; r9  = length difference drone to block
+; r11  = height difference drone to block
+; r10  = length difference drone to block
 ; r12 = z block location
-; r13 = height difference drone to cur
-; r14 = length difference drone to cur
+; r7 = height difference drone to cur
+; r6 = length difference drone to cur
 ; r20 = z drone
 ; r23 = z cur
 ; Z 
@@ -461,11 +565,11 @@ cs_end:
 ; None
 blocked:
 blocked_prologue:
-push r8
-push r9 
+push r11
+push r10 
 push r12 
-push r13
-push r14
+push r7
+push r6
 push r20
 push r21
 push r23
@@ -479,7 +583,7 @@ blocked_body:
 		;and they will have slopes greater
 		cp r23, r12
 		brsh blocked_epilogue
-		compare_slopes r8, r9, r13, r14
+		compare_slopes r11, r10, r7, r6
 		rjmp blocked_epilogue
 bb_higher:
 	;else:
@@ -492,18 +596,19 @@ bb_higher:
 		;if z_cur < z_drone:
 			;it is definitely blocked.
 bb_next:
-		compare_slopes r13, r14, r8, r9
+		compare_slopes r7, r6, r11, r10
 blocked_epilogue:
 pop ZL
 pop ZH
 pop r23
 pop r21
 pop r20
-pop r14
-pop r13
+pop r6
+pop r7
 pop r12
-pop r9
-pop r8
+pop r10
+pop r11
+ret
 
 
 
@@ -511,24 +616,32 @@ pop r8
 ; Calculates the slope between two points
 ; (x1, y1, z1) and (x2, y2, z2)
 ; Stores the results:
-; r13 = (x1-x2)^2 + (y1-y2)^2
-; r14 = (z1-z2)^2
+; r6 = (x1-x2)^2 + (y1-y2)^2
+; r7 = (z1-z2)^2
 slope:
 slope_prologue:
 	push x1
 	push y1
 	push z1
+	push x2
+	push y2
+	push z2
+	push r24
 slope_body:
 	square_diff x1, x2
 	square_diff y1, y2
 	add x1, y1
-	mov r13, x1
+	mov r6, x1
 	square_diff z1, z2
-	mov r14, z1
+	mov r7, z1
 slope_epilogue:
+	pop r24
+	pop z2
+	pop y2
+	pop x2
 	pop z1
 	pop y1
-	pop z1
+	pop x1
 	ret
 
 ;
