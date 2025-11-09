@@ -203,7 +203,7 @@ setup_and_check_visibility_body:
 	ld r20, X  ; Load height into z1 (r20)
 
 	; Set visibility distance - TODO: currently hard coded, just need to set where we save this
-	ldi temp, 3
+	ldi temp, 3*3
 	mov r14, temp
 	clr r15
 
