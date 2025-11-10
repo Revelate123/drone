@@ -23,7 +23,7 @@ jmp end_route_generation
 .def fully_explored_flag = r15
 .def temp = r16
 .def counter = r17
-.def route_size_reg = r18
+.def route_size_reg = r13 ; TODO: figure out why this for r13 works, but does not if its r18
 .def x_idx = r19
 .def y_idx = r20
 ; Do NOT SAVE OVER r21 and r22
@@ -152,6 +152,7 @@ generate_route_body:
 	ldi ZL, low(route_size)
 	ldi ZH, high(route_size)
 	st Z, route_size_reg
+	call input_z_values
 generate_route_epilogue:
 	pop r25
 	pop r24
@@ -323,12 +324,96 @@ check_fully_explored_epilogue:
 	ret
 
 
+; Fill the route with Z values from the main map
+; Parameters: None
+; Modifies the route in place
+; Uses regs:
+; r17 = counter
+; r31:30 = point to DRAM location of the route
+input_z_values:
+input_z_values_prologue:
+	push ZL
+	push ZH
+	push r17
+	push r20
+	push r21
+	push r22
+input_z_values_body:
+	; Load data memory to read/write
+	ldi zl, low(route_size)
+	ldi zh, high(route_size)
+	ld r17, Z+
 
-; Save point in memory with the points between 2 points (max 20)
-; Check if have found the accident location
-path_between_two_points:
-	; space in memory that stores the path from point a to point b
+	z_loop:
+		cpi r17, 0
+		breq finished_loading_z_values			
 
+		; Load params for get_value_at_coords
+		ld r20, Z+
+		ld r21, Z+
+
+		call get_value_at_coords
+
+		st Z+, r22
+
+		dec r17
+		rjmp z_loop
+
+	finished_loading_z_values:
+input_z_values_epilogue:
+	pop r22
+	pop r21
+	pop r20
+	pop r17
+	pop ZH
+	pop ZL
+	ret
+
+; Gets the z-value at (x, y) coordinates from main map
+; Parameters: 
+	; x coord: in r20
+	; y coord: in r21
+; Returns:
+	; z coord in r22
+; Uses:
+	; r16 - temp
+	; r17 - size
+	; r18 - counter
+get_value_at_coords:
+get_value_at_coords_prologue:
+	push ZL
+	push ZH
+	push r16
+	push r17
+	push r18
+get_value_at_coords_body:
+	ldi ZL, low(main_map_size)
+	ldi ZH, high(main_map_size)
+	ld r17, Z+ ; loads size for calculation
+
+	; Calculate offset: Y*size + X
+	mul r21, r17 
+	add r0, r20 ; add X to result of multiplcation (in r0)
+	mov r18, r0
+	; Now our offset is located in r0
+		; using a loop as ldd has offset <= 63 (we could need to go bigger)
+	location_loop:
+		cpi r18, 0
+		breq found_value
+
+		adiw Z, 1
+		dec r18
+		rjmp location_loop
+
+	found_value:
+	ld r22, Z
+get_value_at_coords_epilogue:
+	pop r18
+	pop r17
+	pop r16
+	pop ZH
+	pop ZL
+	ret
 
 
 end_route_generation:
