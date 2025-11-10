@@ -12,37 +12,39 @@
 .include "random_number.inc"
 .include "route_generation.inc"
 
-.equ visibility_map_offset = 250
+.equ main_map_memory_start = 0x0206
+.equ visibility_map_offset = 251
 .equ explored_map_offset = 500
 ; We are using register X for reading maps.
 ; We are using register Y for writing maps.
 
 ; Is the main map
 .dseg
-.org 0x0200
+.org main_map_memory_start
 main_map_size: .byte 1
 main_map_start: .byte 15*15
 
 
 
 ; Is the copy of the map for visibility
-.org 0x0200+250
+.org main_map_memory_start+visibility_map_offset
 visibility_map_size: .byte 1
 visibility_map_start: .byte 15*15
 
 ;
-.org 0x0200+500
+.org main_map_memory_start+explored_map_offset
 explored_map_size: .byte 1
 explored_map_start: .byte 15*15
 
 
 ; Saved route from route generation function
-.org 0x0200+750
+.org main_map_memory_start+750
+marker: .byte 1
 route_size: .byte 1
 route_locations: .byte 15*15*3 ; Save x, y, z for each location (worst case we look at every location, but very unlikely to happen)
 
 
-.org 0x0200+750+675+1
+.org main_map_memory_start+750+675+1+1 ; Delete this extra 1
 cur_route_size: .byte 1
 cur_route_locations: .byte 20
 
@@ -54,6 +56,10 @@ map_size: .db 7
 map: .db 0,0,0,0,0,0,0 , 0,2,2,2,2,2,0 , 0,2,4,4,4,2,0 , 0,2,4,6,4,2,0 , 0,2,4,4,4,2,0 ,  0,2,2,2,2,2,0 , 0,0,0,0,0,0,0
 
 
+ldi ZL, low(marker)
+ldi ZH, high(marker)
+ldi r16, 99
+st z, r16
 
 ldi ZL , low(map_size<<1)
 ldi ZH, high(map_size<<1)
