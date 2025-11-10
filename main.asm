@@ -10,8 +10,10 @@
 .include "m2560def.inc"
 .include "library.inc"
 .include "random_number.inc"
+.include "route_generation.inc"
 
-
+.equ visibility_map_offset = 250
+.equ explored_map_offset = 500
 ; We are using register X for reading maps.
 ; We are using register Y for writing maps.
 
@@ -51,6 +53,8 @@ main:
 map_size: .db 7
 map: .db 0,0,0,0,0,0,0 , 0,2,2,2,2,2,0 , 0,2,4,4,4,2,0 , 0,2,4,6,4,2,0 , 0,2,4,4,4,2,0 ,  0,2,2,2,2,2,0 , 0,0,0,0,0,0,0
 
+
+
 ldi ZL , low(map_size<<1)
 ldi ZH, high(map_size<<1)
 LPM r16, Z
@@ -71,4 +75,7 @@ store_map_loop:
 
 nop
 
+call generate_route
+
+finished:
 
