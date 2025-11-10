@@ -329,10 +329,12 @@ ret
 .def  x_step = r8
 .def  edge_of_map = r9
 ; r2 = current linear position in map
-.macro next_el 
+.macro next_el
+	push r12
 	clr r12
 	inc r12
 	cp x_step, r12
+	pop r12
 	brne dec_YZ
 inc_YZ:
 	adiw Z, 1
@@ -436,7 +438,7 @@ set_max:
 set_min:
 	clr edge_of_map
 set_complete:
-	
+	clr r2
 	add r2, r6 
 	mov r3, lower_bound_X
 	mov r4, lower_bound_Y
@@ -560,15 +562,22 @@ check_bounds_epilogue:
 
 
 .macro compare_slopes
+push r16
+push r17
 mul @0, @3
 mov @0, r0
+mov r16, r1
 mul @2, @1
 mov @2, r0
-cp @2, @0
+mov r17, r1
+cp  @0, @2
+cpc r16, r17
 brsh cs_end
 ldi r21, 0
 st Z, r21
 cs_end:
+	pop r17
+	pop r16
 .endmacro
 
 ; Register inputs:
@@ -607,7 +616,7 @@ blocked_body:
 bb_higher:
 	;else:
 		;Any location may be blocked.
-		cp r23, r12
+		cp r23, r20
 		brsh bb_next
 		ldi r21, 0
 		st Z, r21
