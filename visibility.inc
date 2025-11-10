@@ -3,9 +3,6 @@
 
 jmp end_visibility
 
-.equ visibility_map_offset = 250
-.equ explored_map_offset = 500
-
 .def visL = r14
 .def visH = r15
 .def distL = r16
