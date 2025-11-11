@@ -172,14 +172,26 @@ pop YL
 ;.def lower_bound_Y = r17
 ;.def temp = r24
 .macro compute_bound
-	mov temp, x2
-	subi temp, -@0
-	sub temp, x1
-	mov lower_bound_X, temp
-	mov temp, y2
-	subi temp, -@1
-	sub temp, y1
-	mov lower_bound_Y, temp
+	push x2
+	push x1
+	push y2
+	push y1
+	push r23
+	mov r23, x2
+	subi r23, -@0
+	swap_if_smaller r23, x1
+	sub r23, x1
+	mov lower_bound_X, r23
+	mov r23, y2
+	subi r23, -@1
+	swap_if_smaller r23, y1
+	sub r23, y1
+	mov lower_bound_Y, r23
+	pop r23
+	pop y1
+	pop y2
+	pop x1
+	pop x2
 .endmacro
 
 .def upper_bound_X = r14
@@ -227,7 +239,7 @@ calc_blocking_bounds_body:
 	lsl z2
 
 cp x2, x1
-brlt x2_lower
+brlt x2_lower_jmp
 	cp y2, y1
 	brlt y2_lower_1
 		;top right quadrant
@@ -238,7 +250,8 @@ brlt x2_lower
 		ldi x_step, 1
 		ldi edge_of_map, 1
 		rjmp cbbb_end
-
+x2_lower_jmp:
+rjmp x2_lower
 	y2_lower_1:
 		;bottom right quadrant
 		compute_bound -1, -1
@@ -248,28 +261,30 @@ brlt x2_lower
 		ldi x_step, 1
 		ldi edge_of_map, -1
 		rjmp cbbb_end
-
+	
 x2_lower:
 	cp y2, y1
 	brlt y2_lower_2
 		; bottom left quadrant
-		compute_bound 1, -1
-		mov upper_bound_X, lower_bound_X
-		mov upper_bound_Y, lower_bound_Y
-		compute_bound -1, 1
-		ldi x_step, -1
-		ldi edge_of_map, -1
-		rjmp cbbb_end
-	y2_lower_2:
-		; top left quadrant
 		compute_bound 1, 1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound -1, -1
 		ldi x_step, -1
+		ldi edge_of_map, -1
+		rjmp cbbb_end
+	y2_lower_2:
+		; top left quadrant
+		compute_bound 1, -1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
+		compute_bound -1, 1
+		ldi x_step, -1
 		ldi edge_of_map, 1
 		rjmp cbbb_end
 
+	; For horizontals just set the lower bound to be 0? Or whatever allows everything.
+	; For verticals just set the upper bound to be 0?
 	; elif x1 == x2 and y1 < y2:
 	; 	on a straight line up
 ; 
@@ -429,17 +444,21 @@ init_scan_blocking:
 ; This block of code sets the bounds as either 0 or 1
 	clr r7
 	inc r7
+	
 	cp x_step, r7
 	brne set_min
 set_max:
 	mul r2, r2
 	mov edge_of_map, r0
+	clr r2
 	rjmp set_complete
 set_min:
 	clr edge_of_map
-set_complete:
 	clr r2
-	add r2, r6 
+	inc r2
+set_complete:
+	
+	add r2, r6
 	mov r3, lower_bound_X
 	mov r4, lower_bound_Y
 	mov r12, r23
