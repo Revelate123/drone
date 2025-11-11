@@ -20,6 +20,13 @@ jmp end_lib
 		mov @0, R0
 .endmacro
 
+.macro swap_if_smaller
+	cp @0, @1
+	brsh next_1
+	swap_two_regs @0, @1
+	next_1:
+.endmacro
+
 
 ; Returns the x and y coordinates of a given map address stored in
 ; register Y.
