@@ -55,10 +55,6 @@ map_size: .db 7
 map: .db 0,0,0,0,0,0,0 , 0,2,2,2,2,2,0 , 0,2,4,4,4,2,0 , 0,2,4,6,4,2,0 , 0,2,4,4,4,2,0 ,  0,2,2,2,2,2,0 , 0,0,0,0,0,0,0
 
 
-ldi ZL, low(marker)
-ldi ZH, high(marker)
-ldi r16, 99
-st z, r16
 
 ldi ZL , low(map_size<<1)
 ldi ZH, high(map_size<<1)
