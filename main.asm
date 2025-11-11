@@ -39,12 +39,11 @@ explored_map_start: .byte 15*15
 
 ; Saved route from route generation function
 .org main_map_memory_start+750
-marker: .byte 1
 route_size: .byte 1
 route_locations: .byte 15*15*3 ; Save x, y, z for each location (worst case we look at every location, but very unlikely to happen)
 
 
-.org main_map_memory_start+750+675+1+1 ; Delete this extra 1
+.org main_map_memory_start+750+675+1
 cur_route_size: .byte 1
 cur_route_locations: .byte 20
 
@@ -84,4 +83,4 @@ nop
 call generate_route
 
 finished:
-
+	rjmp finished
