@@ -172,9 +172,7 @@ pop YL
 ;.def lower_bound_Y = r17
 ;.def temp = r24
 .macro compute_bound
-	push x2
 	push x1
-	push y2
 	push y1
 	push r23
 	mov r23, x2
@@ -189,9 +187,7 @@ pop YL
 	mov lower_bound_Y, r23
 	pop r23
 	pop y1
-	pop y2
 	pop x1
-	pop x2
 .endmacro
 
 .def upper_bound_X = r14
@@ -199,7 +195,8 @@ pop YL
 .def lower_bound_X = r16
 .def lower_bound_Y = r17
 .def x_step = r25
-.def edge_of_map = r24
+.def y_step = r24
+
 
 ; Takes as input the current location as an (x1,y1,z1)
 ; and blocker location (x2,y2,z2)
@@ -237,8 +234,11 @@ calc_blocking_bounds_body:
 	lsl x2
 	lsl y2
 	lsl z2
-
+	ldi XL, low(main_map_size)
+	ldi XH, high(main_map_size)
+	ld r2, X+ ; used to compare with map bounds
 cp x2, x1
+breq x2_eq_x1_jump
 brlt x2_lower_jmp
 	cp y2, y1
 	brlt y2_lower_1
@@ -248,10 +248,15 @@ brlt x2_lower_jmp
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound 1, -1
 		ldi x_step, 1
-		ldi edge_of_map, 1
+		ldi y_step, 1
+		mul r2, r2
+		mov r9, r0 ; set final step to be n*n-1
+		dec r9
 		rjmp cbbb_end
 x2_lower_jmp:
 rjmp x2_lower
+x2_eq_x1_jump:
+jmp x2_eq_x1
 	y2_lower_1:
 		;bottom right quadrant
 		compute_bound -1, -1
@@ -259,31 +264,50 @@ rjmp x2_lower
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound 1, 1
 		ldi x_step, 1
-		ldi edge_of_map, -1
+		ldi y_step, -1
+		clr r9
+		add r9, r2 
+		dec r9; final step is 6
 		rjmp cbbb_end
 	
 x2_lower:
 	cp y2, y1
 	brlt y2_lower_2
-		; bottom left quadrant
+		; top left quadrant
 		compute_bound 1, 1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound -1, -1
 		ldi x_step, -1
-		ldi edge_of_map, -1
+		ldi y_step, 1
+		mul r2, r2
+		sub r0, r2
+		mov r9, r0 ; set final step as n*(n-1)
 		rjmp cbbb_end
 	y2_lower_2:
-		; top left quadrant
+		; bottom left quadrant
 		compute_bound 1, -1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound -1, 1
 		ldi x_step, -1
-		ldi edge_of_map, 1
+		ldi y_step, -1
+		clr r9
 		rjmp cbbb_end
 
-	; For horizontals just set the lower bound to be 0? Or whatever allows everything.
+	x2_eq_x1:
+		compute_bound 1,1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
+		clr lower_bound_X
+		clr lower_bound_Y
+		cp y1, y2
+		brlt horz_right
+horz_right:
+	ldi x_step, 1
+
+		rjmp cbbb_end
+	; For horizontals just check in a straight line, calling the slope and compare directly
 	; For verticals just set the upper bound to be 0?
 	; elif x1 == x2 and y1 < y2:
 	; 	on a straight line up
@@ -303,7 +327,7 @@ cbbb_end:
 	;lsr lower_bound_X
 	;lsr lower_bound_Y
 	mov r8, x_step
-	mov r9, edge_of_map
+	mov r13, y_step
 	; Now have two bounds, the current location, blocking start location, x_step, edge_of_map
 	; call the next blocking function
 	lsr x1
@@ -341,29 +365,103 @@ ret
 ; r26 = XL
 ; r9 = edge_of_map
 ; r8 = x_step
+; r13 = y_step
+.def y_step = r13
 .def  x_step = r8
 .def  edge_of_map = r9
 ; r2 = current linear position in map
-.macro next_el
-	push r12
-	clr r12
-	inc r12
-	cp x_step, r12
-	pop r12
-	brne dec_YZ
-inc_YZ:
+next_el:
+next_el_prologue:
+push r8
+push r9
+push r13
+push r16
+push r17
+push YH
+push YL
+next_el_body:
+; Get the map size
+ldi YL, low(main_map_size)
+ldi YH, high(main_map_size)
+ld r17, Y
+mul y2, r17
+add r0, x2
+cp r0, edge_of_map
+breq ne_fin_loop
+; Check what mode we are using
+mov r16, x_step
+cp x_step, y_step ; If x_step == y_step:
+brne special_inc_dec
+cpi r16, 1 ; if x_step == 1:
+brne dec_YZ		
+inc_YZ: ;increment
 	adiw Z, 1
 	adiw X, 1
 	inc r2
-	cp r2, edge_of_map
-	brne sfbpb_loop
-	rjmp sfbpb_end
-dec_YZ:
+	rjmp ne_cont_loop
+	; if x_step == -1:		
+dec_YZ: ; decrement
 	sbiw Z, 1
 	sbiw X, 1
 	dec r2
-	brne sfbpb_loop
-.endmacro
+	rjmp ne_cont_loop
+special_inc_dec: ; else:
+	cpi r16, 1; if x_step == 1:
+	brne special_dec
+	adiw Z, 1
+	adiw X, 1
+	inc r2
+	inc x2
+	cp x2, r17
+	brne ne_cont_loop
+	lsl r17
+	cp r2, r17
+	brlt ne_fin_loop
+	sub ZL, r17
+	sbci ZH, 0
+	sub XL, r17
+	sbci XH, 0
+	sub r2, r17
+	rjmp ne_cont_loop
+	;
+		;Then y_step = -1
+		;inc but if x == map size
+special_dec: ;else if x_step == -1:
+	sbiw Z, 1
+	sbiw X, 1
+	clr r16
+	dec r2
+	dec x2
+	dec r16
+	cp x2, r16
+	brne ne_cont_loop
+	lsl r17
+	clr r16
+	add x2, r17
+	
+	add ZL, r17
+	adc ZH, r16
+	add XL, r17
+	adc XH, r16
+	add r2, r17
+	rjmp ne_cont_loop
+
+ne_fin_loop:
+	clr r24
+	rjmp next_el_epilogue
+
+ne_cont_loop:
+	ldi r24, 1
+
+next_el_epilogue:
+pop YL
+pop YH
+pop r17
+pop r16
+pop r13
+pop r9
+pop r8
+ret
 
 
 
@@ -388,8 +486,8 @@ dec_YZ:
 ; r12 = temporary
 ; r11 = slope to block
 ; r10 = slope to block
-; r9 = x_step (input)
-; r8 = edge_of_map (input)
+; r9 = edge_of_map (input)
+; r8 = x_step (input)
 ; r7 = temporary ** slope outputs here
 ; r6 = address_offset ** slope outputs here
 ; r5 = blocking check output
@@ -445,19 +543,8 @@ init_scan_blocking:
 	clr r7
 	inc r7
 	
-	cp x_step, r7
-	brne set_min
-set_max:
-	mul r2, r2
-	mov edge_of_map, r0
-	clr r2
-	rjmp set_complete
-set_min:
-	clr edge_of_map
-	clr r2
-	inc r2
 set_complete:
-	
+	clr r2
 	add r2, r6
 	mov r3, lower_bound_X
 	mov r4, lower_bound_Y
@@ -482,7 +569,9 @@ sfbpb_loop:
 	call slope ; stores results in r6 and r7
 	call blocked
 out_of_bounds:
-	next_el
+	call next_el
+	cpi r24, 1
+	breq sfbpb_loop
 
 sfbpb_end:
 scan_from_blocking_point_epilogue:
