@@ -22,9 +22,12 @@ rjmp end_of_file
 	rcall lcd_command
 	rcall lcd_wait
 .endmacro
-
-
 .macro do_lcd_data
+	ldi r16, @0
+	rcall lcd_data
+	rcall lcd_wait
+.endmacro
+.macro do_lcd_data_from_reg
 	mov r16, @0
 	rcall lcd_data
 	rcall lcd_wait
@@ -70,6 +73,60 @@ rjmp end_of_file
 .macro lcd_clr
 	cbi PORTA, @0
 .endmacro
+
+.macro lcd_shift_left
+	do_lcd_command 0b00011000
+.endmacro
+.macro lcd_back_to_home
+	do_lcd_command 0b00000010
+.endmacro
+
+.macro input_msg_to_display
+	; @0 is the message from pmem
+	; uses ZL, ZH, r17, r18, r19 pls do stack init for this
+	; clear counter (r17)
+	; temp = r18
+	; delaycounter (r19)
+	ldi ZL, low(@0<<1)
+	ldi ZH, high(@0<<1)
+	rcall print_multiple
+.endmacro
+
+print_multiple:
+	push r17
+	push r18
+	push ZL
+	push ZH
+	clr r17
+print_loop:
+	lpm r18, Z+
+	tst r18
+	breq print_done
+	do_lcd_data_from_reg temp
+	inc r17						; increase counter
+	rjmp print_loop
+print_done:
+	rcall sleep_500ms
+	rcall sleep_500ms
+	rcall sleep_500ms
+	; if r17 counter is more than 16 (visible LCD) -> scroll
+	mov r18, r17
+lcd_overflow_check:
+	cpi r18, 17
+	brlo fin_scrolling
+	lcd_shift_left
+	rcall sleep_500ms
+	dec r18
+	rjmp lcd_overflow_check
+fin_scrolling:
+	rcall sleep_500ms
+	lcd_back_to_home
+	pop ZH
+	pop ZL
+	pop r18
+	pop r17
+	ret
+
 
 ;
 ; Send a command to the LCD (r16)
@@ -153,7 +210,7 @@ sleep_5ms:
 	ret
 
 ;----------------------------------------------------------------------------------------------------
-; Two additional sleep commands were added of longer durations.
+; additional sleep commands were added of longer durations.
 sleep_50ms:
 	rcall sleep_5ms
 	rcall sleep_5ms
@@ -168,6 +225,19 @@ sleep_50ms:
 	ret
 
 sleep_200ms:
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_50ms
+	ret
+
+sleep_500ms:
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_50ms
 	rcall sleep_50ms
 	rcall sleep_50ms
 	rcall sleep_50ms
