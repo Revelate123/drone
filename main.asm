@@ -74,7 +74,7 @@ RESET:
 
   
  
-
+	
     ;cpi r16, 0
     ;brne error_flash
     ;call init_simulation_timer
@@ -112,6 +112,7 @@ main:
 	nop
 	
 	call generate_route
+
 /*
 main_loop:
     ; Scan keypad (non-blocking)
@@ -157,7 +158,7 @@ no_arrival:
 .include "keypad.inc"
 .include "random_number.inc"
 .include "route_generation.inc"
-
+.include "lcd_display.inc"
 ; ============================================================================
 ; FLASH DATA
 ; ============================================================================
