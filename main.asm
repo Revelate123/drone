@@ -103,6 +103,11 @@ clear_explored:
     dec r17
     brne clear_explored
 
+; -----------Added by Tom---------------
+	.include "lcd_display.inc"
+	reset_screen
+; --------------------------------------
+
     ; Generate observation route
     call generate_route
     
@@ -129,7 +134,7 @@ main_loop:
 wait_for_tick:
     ; Scan keypad
     call scan_keypad_simple
-    
+	call update_height
     ; ========================================
     ; HANDLE PAUSE (Key 0) - Special case
     ; ========================================
@@ -254,6 +259,7 @@ waypoint_arrived:
     call advance_waypoint
     
 tick_done:
+call update_status
     jmp main_loop               ; ? Absolute jump back to top
 
 ; ============================================================================
