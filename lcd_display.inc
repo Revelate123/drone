@@ -310,13 +310,16 @@ update_speed:
 	; r21 had the speed value in dm/s
 	; max is 29 m/s
 update_speed_prologue:
+push r21
+push r16
+update_speed_body:
 	do_lcd_command 0b11000110
-	push r21
+	lds r21, drone_speed
 	cpi r21, 20
 	brsh print_20s
 	cpi r21, 10
 	brsh print_10s
-	do_lcd_command 0b11000111
+	do_lcd_data ' '
 	subi r21, -'0'
 	do_lcd_data_from_reg r21
 	rjmp update_speed_epilogue
@@ -336,7 +339,8 @@ update_speed_epilogue:
 	do_lcd_data 'm'
 	do_lcd_data '/'
 	do_lcd_data 's'
-	rcall sleep_50ms			; for buffer, to be able to see
+	;rcall sleep_50ms			; for buffer, to be able to see
+	pop r16
 	pop r21
 	ret
 
@@ -362,7 +366,7 @@ print_10s_h:
 	do_lcd_data_from_reg r21
 	rjmp update_height_epilogue
 update_height_epilogue:
-	rcall sleep_50ms  ; for buffer, to be able to see
+	;rcall sleep_50ms  ; for buffer, to be able to see
 	pop r16
 	pop r21
 	ret
