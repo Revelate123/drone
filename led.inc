@@ -1,7 +1,7 @@
 ; ============================================================================
 ; led.inc
 ; ============================================================================
-; LED control for status indication
+; Most functions are for testing purpose 
 ; ============================================================================
 
 jmp end_led
@@ -16,11 +16,12 @@ init_led:
     ldi r16, 0xFF
     out DDRC, r16
     
-    ldi r16, 0xFF
+    ldi r16, 0x00      ;  Start with LEDs OFF
     out PORTC, r16
     
     pop r16
     ret
+	
 
 ; ============================================================================
 ; INIT_LED_FLASH
@@ -37,6 +38,7 @@ init_led_flash:
     
     pop r16
     ret
+
 
 ; ============================================================================
 ; FLASH_LED_CONTINUOUS
@@ -77,4 +79,47 @@ flash_led_done:
     pop r16
     ret
 
+
+; ============================================================================
+; SHOW_LED_PROGRESS
+; Shows progress by lighting up more LEDs
+; Input: r16 = number of LEDs to light (1-8)
+; ============================================================================
+show_led_progress:
+    push r17
+    push r18
+    
+    clr r17              
+    clr r18              
+    
+    cpi r16, 0           
+    breq show_zero_leds
+    
+    ; Cap at 8 LEDs maximum
+    cpi r16, 9
+    brlo build_pattern
+    ldi r16, 8           ; If more than 8, set to 8
+    
+build_pattern:
+    cp r18, r16          
+    breq pattern_done
+    
+    sec                  
+    rol r17              
+    inc r18
+    rjmp build_pattern
+    
+pattern_done:
+    mov r16, r17
+    out PORTC, r16       
+    rjmp show_done
+    
+show_zero_leds:
+    ldi r16, 0x00
+    out PORTC, r16
+    
+show_done:
+    pop r18
+    pop r17
+    ret
 end_led:
