@@ -288,21 +288,15 @@ update_status:
 	; r21 = 1 Hover/Pause
 	; r21 = 2 Crash
 update_status_prologue:
-	do_lcd_command 0b11000001
 	push r21
+	push r16
 update_status_body:
-	cpi r21, 1
-	brsh pause_or_crash
-	do_lcd_data 'F'
+	do_lcd_command 0b11000001
+	lds r21, drone_state
+	do_lcd_data_from_reg r21
 	rjmp update_status_epilogue
-pause_or_crash:
-	cpi r21, 2
-	breq crash
-	do_lcd_data 'P'
-	rjmp update_status_epilogue
-crash:
-	do_lcd_data 'C'
 update_status_epilogue:
+	pop r16
 	pop r21
 	ret
 
