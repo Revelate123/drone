@@ -19,10 +19,6 @@ jmp end_visibility
 ; Calculate distance^2 between two points
 ; Stores output in register r17:r16
 ; distance(x1, y1, z1, x2, y2, z2):
-; tests:
-;     (x1, y1, z1) = (3, 4, 5)
-;     (x2, y2, z2) = (15, 7, 15)
-;     returns 253
 distance:
 distance_prologue:
 	push YL
@@ -34,8 +30,6 @@ distance_prologue:
 	push r22
 	push r23
 	push r24
-	
-
 distance_body:
 	clr distL
 	clr distH
@@ -51,7 +45,6 @@ distance_body:
 	add distL, z1
 	clr temp
 	adc distH, temp
-
 distance_epilogue:
 	pop r24
 	pop r23
@@ -65,7 +58,6 @@ distance_epilogue:
 	ret
 
 ; Clears the visibility map
-; UNTESTED
 clear_visibility_map:
 clear_visibility_map_prologue:
 	push YL
@@ -91,14 +83,15 @@ clear_visibility_map_epilogue:
 	pop YL
 	ret
 
-; visibility without blocking
-; edits the visibility map 
-; takes as parameters the current location
+; computes the visible locations without considering blocking
+; Parameters:
 ; x1 = r18
 ; y1 = r19
 ; z1 = r20
 ; visL = r14
 ; visH = r15
+; Effects:
+; Changes the visibility map stored in data memory
 check_visible_no_block:
 check_visible_no_block_prologue:
 	push YL
@@ -119,89 +112,51 @@ check_visible_no_block_prologue:
 	push r27
 	push ZH
 	push ZL
-	
 check_visible_no_block_body:
-		rcall clear_visibility_map
-		ldi YL, low(main_map_size)
-		ldi YH, high(main_map_size)
-		ldi ZL, low(visibility_map_start)
-		ldi ZH, high(visibility_map_start)
-		ld r26, Y+
-		mul r26, r26
-		mov r26, r0
-	cvnbb_loop:
-		call get_coords ;stores x2,y2 values
-		ld z2, Y+		; stores z2
-		call distance	; stores distL:distH using all coords stored in registers
-		cp  visL, distL 
-		cpc visH, distH
-		brlt not_visible
-		ldi r21, 1		; r21 no longer required for the rest of loop
-		st Z, r21
-	not_visible:
-		adiw Z, 1
-		dec r26
-		brne cvnbb_loop
-
+	rcall clear_visibility_map
+	ldi YL, low(main_map_size)
+	ldi YH, high(main_map_size)
+	ldi ZL, low(visibility_map_start)
+	ldi ZH, high(visibility_map_start)
+	ld r26, Y+			; Map size stored in r26, note this conflicts with register pair X
+	mul r26, r26
+	mov r26, r0			; Square map size and store in r26, used as a counter to visit all cells.
+cvnbb_loop:
+	call get_coords		; stores x2,y2 values
+	ld z2, Y+			; stores z2
+	call distance		; stores distL:distH using all coords stored in registers
+	cp  visL, distL		; Compare the visibility with the current distance
+	cpc visH, distH
+	brlt not_visible
+	ldi r21, 1			; Note, r21 no longer required for rest of function.
+	st Z, r21			; Mark location in map as visible.
+not_visible:
+	adiw Z, 1			; Increment Z to point to next cell.
+	dec r26				
+	brne cvnbb_loop
 check_visible_no_block_epilogue:
-
-pop ZL
-pop ZH
-pop r27
-pop r26
-pop r25
-pop r24
-pop r23
-pop r22
-pop r21
-pop r20
-pop r19
-pop r18
-pop r17
-pop r16
-pop r15
-pop r14
-pop YH
-pop YL
-
+	pop ZL
+	pop ZH
+	pop r27
+	pop r26
+	pop r25
+	pop r24
+	pop r23
+	pop r22
+	pop r21
+	pop r20
+	pop r19
+	pop r18
+	pop r17
+	pop r16
+	pop r15
+	pop r14
+	pop YH
+	pop YL
 	ret
 
-; Computes the bounds and stores results in registers
-; lower_bound_X and lower_bound_Y
-;.def lower_bound_X = r16
-;.def lower_bound_Y = r17
-;.def temp = r24
-.macro compute_bound
-	push x1
-	push y1
-	push r23
-	mov r23, x2
-	subi r23, -@0
-	swap_if_smaller r23, x1
-	sub r23, x1
-	mov lower_bound_X, r23
-	mov r23, y2
-	subi r23, -@1
-	swap_if_smaller r23, y1
-	sub r23, y1
-	mov lower_bound_Y, r23
-	pop r23
-	pop y1
-	pop x1
-.endmacro
-
-.def upper_bound_X = r14
-.def upper_bound_Y = r15
-.def lower_bound_X = r16
-.def lower_bound_Y = r17
-.def x_step = r25
-.def y_step = r24
-
-
-; Takes as input the current location as an (x1,y1,z1)
-; and blocker location (x2,y2,z2)
-calc_blocking_bounds:
-calc_blocking_bounds_prologue:
+check_visible:
+check_visible_prologue:
 	push YL
 	push YH
 	push r14
@@ -214,19 +169,100 @@ calc_blocking_bounds_prologue:
 	push r21
 	push r22
 	push r23
+	push r26
+check_visible_body:
+	rcall check_visible_no_block
+	ldi YL, low(main_map_size)
+	ldi YH, high(main_map_size)
+	ld r26, Y+			; Map size stored in r26, note this conflicts with register pair X
+	mul r26, r26
+	mov r26, r0			; Square map size and store in r26, used as a counter to visit all cells.
+cvb_loop:
+	call get_coords		; stores x2,y2 values
+	ld z2, Y+			; stores z2
+	rcall scan_from_blocking_point
+	dec r26				
+	brne cvb_loop
+check_visible_epilogue:
+	pop r26
+	pop r23
+	pop r22
+	pop r21
+	pop r20
+	pop r19
+	pop r18
+	pop r17
+	pop r16
+	pop r15
+	pop r14
+	pop YH
+	pop YL
+	ret
+
+; Computes the bounds and stores results in registers lower_bound_X and lower_bound_Y
+; Takes signed integer inputs, @0 and @1 which are added to x2 and y2 prior. 
+; Bounds are |x1 - (x2 + @0)| and |y1 - (y2 + @1)|
+; To compute a straight line between two points, set @0 = 0 and @1 = 0.
+.def lower_bound_X = r16
+.def lower_bound_Y = r17
+.macro compute_bound
+	;Store conflicts to the stack
+	push x1			
+	push y1			
+	push r23	
+	; r23 used as temp register for subtraction.	
+	mov r23, x2
+	subi r23, -@0
+	swap_if_smaller r23, x1 ; Registers must be swapped in some cases to prevent overflow.
+	sub r23, x1				; Compute difference in X
+	mov lower_bound_X, r23
+	mov r23, y2
+	subi r23, -@1
+	swap_if_smaller r23, y1
+	sub r23, y1				; Computes difference in Y
+	mov lower_bound_Y, r23
+	pop r23
+	pop y1
+	pop x1
+.endmacro
+
+; Takes as input the current location as an (x1,y1,z1)
+; and blocking cell location (x2,y2,z2) and computes boundary slopes to registers:
+; upper_bound_X
+; upper_bound_Y
+; lower_bound_X
+; lower_bound_Y
+; Explanation:
+; Boundary slopes are computed assuming that there are four corners to each cell.
+; By drawing two lines from the centre of the current cell to the two corners which give the
+; maximum difference in slope and then extrapolating beyond, a "shadow" is cast. 
+; Any cells falling within these two boundary lines are within the shadow, and can potentially be blocked.
+; To compute the two lines, the coordinate system is multiplied by 2 to allow for "half-steps" to the 
+; corners of the cells. Then the "half-steps" are applied depending on the location of the drone and the 
+; cell which is casting the "shadow". This causes there to be 9 total cases of blocking:
+; a) Four quadrants, which cast diagonal shadows into their quadrants.
+; b) Four orthoganals, which cast shadows in a straight line. e.g. along the X or Y axis.
+; c) The blocking cell and drone are in the same location.
+.def upper_bound_X = r14
+.def upper_bound_Y = r15
+.def lower_bound_X = r16
+.def lower_bound_Y = r17
+.def x_step = r25
+.def y_step = r24
+calc_blocking_bounds:
+calc_blocking_bounds_prologue:
+	push YL
+	push YH
+	push r18
+	push r19
+	push r20
+	push r21
+	push r22
+	push r23
 	push r24
 	push r25
 	push r26
 
-;multiply coordinate system by two
-;there are four corners to each cell.
-;draw a line from the centre of the current cell
-;to the two relevant corners of the blocking cell.
-;Compute two ratios of H/L slopes in 2Dimensions.
-;Compare these ratios with other cells. 
-;If it is within the bounds of these two ratios, it 
-;can be blocked. Else it can't
-; cur_loc, target_loc
 calc_blocking_bounds_body:
 	lsl x1
 	lsl y1
@@ -379,7 +415,6 @@ cbbb_end:
 	lsr x2
 	lsr y2
 	lsr z2
-	call scan_from_blocking_point
 
 calc_blocking_bounds_epilogue:
 pop r26
@@ -391,10 +426,6 @@ pop r21
 pop r20
 pop r19
 pop r18
-pop r17
-pop r16
-pop r15
-pop r14
 pop YH
 pop YL
 ret
@@ -541,10 +572,18 @@ scan_from_blocking_point_prologue:
 	push r21
 	push r22
 	push r23
-
+	push r24
+	push r25
+	push r26
+	push r27
+	push r28
+	push r29
+	push r30
+	push r31
 
 scan_from_blocking_point_body:
 init_scan_blocking:
+	rcall calc_blocking_bounds
 	ldi XL, low(main_map_size)
 	ldi XH, high(main_map_size)
 	call get_address_offset ; stored in r6
@@ -594,6 +633,14 @@ out_of_bounds:
 
 sfbpb_end:
 scan_from_blocking_point_epilogue:
+pop r31
+pop r30
+pop r29
+pop r28
+pop r27
+pop r26
+pop r25
+pop r24
 pop r23
 pop r22
 pop r21
