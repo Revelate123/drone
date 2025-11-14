@@ -24,8 +24,14 @@ rjmp end_of_file
 .endmacro
 
 
-.macro do_lcd_data
+.macro do_lcd_data_from_reg
 	mov r16, @0
+	call lcd_data
+	call lcd_wait
+.endmacro
+
+.macro do_lcd_data
+	ldi r16, @0
 	call lcd_data
 	call lcd_wait
 .endmacro
@@ -89,6 +95,7 @@ rjmp end_of_file
 	rcall print_multiple
 .endmacro
 
+.def temp=r18
 print_multiple:
 	push r17
 	push r18
@@ -135,8 +142,8 @@ display_route_prologue:
 	push r19	; this is for char_counter
 	push r20	; this is for x, y, z stages
 				; found x. r20 = 0 || found y. r20 = 1 || found z. r20 = 2
-	ldi XL, low(route_size_sram)
-	ldi XH, high(route_size_sram)
+	ldi XL, low(cur_route_size)
+	ldi XH, high(cur_route_size)
 	; we want to read the next route_size * 3
 	ldi r16, 3	; 3: this is for x, y, z
 	ld r17, X+
@@ -337,19 +344,14 @@ update_height:
 	; r21 had the speed value in m
 	; max is 15 m
 update_height_prologue:
+push r21
+push r16
+update_height_body:
 	do_lcd_command 0b11001110
-	push r21
-	cpi r21, 20
-	brsh print_20s_h
+	lds r21, drone_altitude
 	cpi r21, 10
 	brsh print_10s_h
-	do_lcd_command 0b11001111
-	subi r21, -'0'
-	do_lcd_data_from_reg r21
-	rjmp update_height_epilogue
-print_20s_h:
-	do_lcd_data '2'
-	subi r21, 20
+	do_lcd_data ' '
 	subi r21, -'0'
 	do_lcd_data_from_reg r21
 	rjmp update_height_epilogue
@@ -360,7 +362,8 @@ print_10s_h:
 	do_lcd_data_from_reg r21
 	rjmp update_height_epilogue
 update_height_epilogue:
-	rcall sleep_50ms			; for buffer, to be able to see
+	rcall sleep_50ms  ; for buffer, to be able to see
+	pop r16
 	pop r21
 	ret
 
@@ -465,6 +468,13 @@ sleep_200ms:
 	rcall sleep_50ms
 	rcall sleep_50ms
 	rcall sleep_50ms
+	ret
+
+sleep_500ms:
+	rcall sleep_50ms
+	rcall sleep_50ms
+	rcall sleep_200ms
+	rcall sleep_200ms
 	ret
 ;----------------------------------------------------------------------------------------------------
 
