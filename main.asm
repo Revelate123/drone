@@ -135,6 +135,7 @@ wait_for_tick:
     ; Scan keypad
     call scan_keypad_simple
 	call update_height
+	call update_speed
     ; ========================================
     ; HANDLE PAUSE (Key 0) - Special case
     ; ========================================
