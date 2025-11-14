@@ -30,7 +30,7 @@ process_key_no_pause:
 
 key_alt_up:
     lds r16, drone_altitude
-    cpi r16, 100
+    cpi r16, 15
     brsh process_key_end
     inc r16
     sts drone_altitude, r16
@@ -61,6 +61,7 @@ key_speed_down:
     rjmp process_key_end
 
 process_key_end:
+	
     pop r17
     ret
 
