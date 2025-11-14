@@ -277,7 +277,6 @@ cp x2, x1
 breq x2_eq_x1_jump
 brlt x2_lower_jmp
 	cp y2, y1
-	breq y1_eq_y2_jump
 	brlt y2_lower_1
 		;top right quadrant
 		compute_bound -1, 1
@@ -285,7 +284,7 @@ brlt x2_lower_jmp
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound 1, -1
 		ldi x_step, 1
-		ldi y_step, 0
+		ldi y_step, 1
 		mul r2, r2
 		mov r9, r0 ; set final step to be n*n-1
 		dec r9
@@ -294,8 +293,6 @@ x2_lower_jmp:
 rjmp x2_lower
 x2_eq_x1_jump:
 jmp x2_eq_x1
-y1_eq_y2_jump:
-jmp y1_eq_y2
 	y2_lower_1:
 		;bottom right quadrant
 		compute_bound -1, -1
@@ -303,7 +300,7 @@ jmp y1_eq_y2
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound 1, 1
 		ldi x_step, 1
-		ldi y_step, -2
+		ldi y_step, -1
 		clr r9
 		add r9, r2 
 		dec r9; final step is 6
@@ -311,7 +308,6 @@ jmp y1_eq_y2
 	
 x2_lower:
 	cp y2, y1
-	breq y1_eq_y2_jump2
 	brlt y2_lower_2
 		; top left quadrant
 		compute_bound 1, 1
@@ -319,13 +315,11 @@ x2_lower:
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound -1, -1
 		ldi x_step, -1
-		ldi y_step, 2
+		ldi y_step, 1
 		mul r2, r2
 		sub r0, r2
 		mov r9, r0 ; set final step as n*(n-1)
 		rjmp cbbb_end
-y1_eq_y2_jump2:
-jmp y1_eq_y2
 	y2_lower_2:
 		; bottom left quadrant
 		compute_bound 1, -1
@@ -333,59 +327,22 @@ jmp y1_eq_y2
 		mov upper_bound_Y, lower_bound_Y
 		compute_bound -1, 1
 		ldi x_step, -1
-		ldi y_step, 0
-		clr r9
-		rjmp cbbb_end
-
-;------straight lines section----------
-	x2_eq_x1:
-		clr upper_bound_X
-		clr upper_bound_Y
-		clr lower_bound_X
-		clr lower_bound_Y
-		; Straight line vertically
-		clr x_step
-		cp y1, y2
-		brlt up
 		ldi y_step, -1
 		clr r9
-		add r9, x1
-		lsr r9
 		rjmp cbbb_end
-up:
-	ldi y_step, 1
-	;-----
-	mul r2, r2
-	sub r0, r2
-	mov r9, x1
-	lsr r9
-	add r0, r9
-	mov r9, r0
-	rjmp cbbb_end
 
-y1_eq_y2:
-		clr upper_bound_X
-		clr upper_bound_Y
+	x2_eq_x1:
+		compute_bound 1,1
+		mov upper_bound_X, lower_bound_X
+		mov upper_bound_Y, lower_bound_Y
 		clr lower_bound_X
 		clr lower_bound_Y
-	clr y_step
-	cp x1, x2
-	brlt right
-	ldi x_step, -1
-	lsr y2
-	mul y2, r2
-	lsl y2
-	mov r9, r0
-	rjmp cbbb_end
-right:
+		cp y1, y2
+		brlt horz_right
+horz_right:
 	ldi x_step, 1
-	mov r9, r2
-	lsr y2
-	mul y2, r2
-	lsl y2
-	add r9, r0
-	dec r9
-	rjmp cbbb_end
+
+		rjmp cbbb_end
 	; For horizontals just check in a straight line, calling the slope and compare directly
 	; For verticals just set the upper bound to be 0?
 	; elif x1 == x2 and y1 < y2:
@@ -451,7 +408,6 @@ push r9
 push r13
 push r16
 push r17
-push r18
 push YH
 push YL
 next_el_body:
@@ -463,38 +419,64 @@ mul y2, r17
 add r0, x2
 cp r0, edge_of_map
 breq ne_fin_loop
-clr r16
-;----Check x_step == 0 ---------
-cp x_step, r16
-breq add_columns
-;---------add x_step-------
-cp x_step, r16
-brge cont
-dec r16
-cont:
-add ZL, x_step
-adc ZH, r16
-add XL, x_step
-adc XH, r16
-add r2, x_step
-add x2, x_step
-;-------------------
-; compare x2 to the row width, if greater then add x_step*row_width
-cp x2, r17
-brlo ne_cont_loop
-mul x_step, r17
-add x2, r0 ; reset back to row start/end
-;----add columns------
-add_columns:
-mov r18, y_step
-muls r18, r17
-add ZL, r0
-adc ZH, r1
-add XL, r0
-adc XH, r1
-add r2, r0
-rjmp ne_cont_loop
-;---------------------- 
+; Check what mode we are using
+mov r16, x_step
+cp x_step, y_step ; If x_step == y_step:
+brne special_inc_dec
+cpi r16, 1 ; if x_step == 1:
+brne dec_YZ		
+inc_YZ: ;increment
+	adiw Z, 1
+	adiw X, 1
+	inc r2
+	rjmp ne_cont_loop
+	; if x_step == -1:		
+dec_YZ: ; decrement
+	sbiw Z, 1
+	sbiw X, 1
+	dec r2
+	rjmp ne_cont_loop
+special_inc_dec: ; else:
+	cpi r16, 1; if x_step == 1:
+	brne special_dec
+	adiw Z, 1
+	adiw X, 1
+	inc r2
+	inc x2
+	cp x2, r17
+	brne ne_cont_loop
+	lsl r17
+	cp r2, r17
+	brlt ne_fin_loop
+	sub ZL, r17
+	sbci ZH, 0
+	sub XL, r17
+	sbci XH, 0
+	sub r2, r17
+	rjmp ne_cont_loop
+	;
+		;Then y_step = -1
+		;inc but if x == map size
+special_dec: ;else if x_step == -1:
+	sbiw Z, 1
+	sbiw X, 1
+	clr r16
+	dec r2
+	dec x2
+	dec r16
+	cp x2, r16
+	brne ne_cont_loop
+	lsl r17
+	clr r16
+	add x2, r17
+	
+	add ZL, r17
+	adc ZH, r16
+	add XL, r17
+	adc XH, r16
+	add r2, r17
+	rjmp ne_cont_loop
+
 ne_fin_loop:
 	clr r24
 	rjmp next_el_epilogue
@@ -505,7 +487,6 @@ ne_cont_loop:
 next_el_epilogue:
 pop YL
 pop YH
-pop r18
 pop r17
 pop r16
 pop r13
@@ -616,9 +597,9 @@ sfbpb_loop:
 	mov YH, XH
 	mov YL, XL
 	call get_coords ;stores x2,y2 values based on Y
-	/*ld r16, Z 
+	ld r16, Z 
 	cpi r16, 0
-	breq out_of_bounds*/
+	breq out_of_bounds
 	rcall check_bounds
 	mov r16, r5
 	cpi r16, 0
@@ -798,25 +779,7 @@ bb_higher:
 		;if z_cur < z_drone:
 			;it is definitely blocked.
 bb_next:
-		;compare_slopes r7, r6, r11, r10
-		;--------------
-		push r16
-push r17
-mul r7, r10
-mov r7, r0
-mov r16, r1
-mul r11, r6
-mov r11, r0
-mov r17, r1
-cp  r7, r11
-cpc r16, r17
-brsh cs_end
-ldi r21, 0
-st Z, r21
-cs_end:
-	pop r17
-	pop r16
-		;--------------
+		compare_slopes r7, r6, r11, r10
 blocked_epilogue:
 pop ZL
 pop ZH
@@ -864,11 +827,30 @@ slope_epilogue:
 	pop x1
 	ret
 
-
 ;
-straight_line_blocking_scan:
-straight_line_blocking_scan_prologue:
-straight_line_blocking_scan_body:
-straight_line_blocking_scan_epilogue:
+
+
 
 end_visibility:
+
+
+
+; .macro bounded_next_element
+; 	add x2, x_step
+; 	cpi x2, 255
+; 	breq reset_x
+; 	cp x2, r2
+; 	breq reset_x 
+; 	rjmp cont
+; reset_x:
+; 	mov x2, x1
+; 	add y2, edge_of_map
+; 	cpi y2, 255
+; 	breq end_of_loop
+; 	cpi y, r2
+; 	breq end_of_loop
+; 	rjmp cont:
+; end_of_loop:
+; 	ser r2
+; cont:
+; .endmacro
