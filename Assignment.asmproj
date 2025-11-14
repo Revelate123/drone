@@ -80,7 +80,22 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="collision_detection.inc">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="drone_control.inc">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="lcd_display.inc">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="lcd_drone_display.inc">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="main.asm">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="path_between_two_points.inc">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="test.asm">
