@@ -120,22 +120,91 @@ clear_explored:
     sts simulation_counter+1, r16
 
 ; ============================================================================
-; MAIN LOOP 
+; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
 ; ============================================================================
 main_loop:
-    ; Wait for timer tick (0.5 seconds)
+    ; ========================================
+    ; KEYPAD POLLING LOOP (while waiting for tick)
+    ; ========================================
+wait_for_tick:
+    ; Scan keypad
+    call scan_keypad_simple
+    
+    ; ========================================
+    ; HANDLE PAUSE (Key 0) - Special case
+    ; ========================================
+    cpi r16, '0'
+    brne not_pause_key
+    
+    ; Key 0 is pressed - PAUSE (if not crashed/done)
+    lds r17, drone_state
+    cpi r17, 'C'
+    breq check_other_keys
+    cpi r17, 'D'
+    breq check_other_keys
+    
+    ; Set to paused
+    ldi r17, 'P'
+    sts drone_state, r17
+    rjmp check_tick
+    
+not_pause_key:
+    ; Key 0 NOT pressed - RESUME if was paused
+    lds r17, drone_state
+    cpi r17, 'P'
+    brne check_other_keys
+    
+    ; Was paused, now resume
+    ldi r17, 'F'
+    sts drone_state, r17
+    
+    ; ========================================
+    ; HANDLE OTHER KEYS (Altitude/Speed)
+    ; ========================================
+check_other_keys:
+    ; Check if any key pressed
+    cpi r16, 0xFF
+    brne other_key_pressed
+    
+    ; No key - clear last_key
+    ldi r17, 0xFF
+    sts last_key_pressed, r17
+    rjmp check_tick
+    
+other_key_pressed:
+    ; Check if this is a NEW press (not Key 0)
+    cpi r16, '0'
+    breq check_tick
+    
+    lds r17, last_key_pressed
+    cp r16, r17
+    breq check_tick
+    
+    ; NEW key press - process it
+    push r16
+    sts last_key_pressed, r16
+    call process_key_no_pause
+    pop r16
+    
+    ; Debounce delay
+    ldi r18, 50
+debounce_loop:
+    dec r18
+    brne debounce_loop
+    
+check_tick:
+    ; Check if timer tick occurred
     lds r16, simulation_tick_flag
     cpi r16, 1
-    brne main_loop
+    brne wait_for_tick
     
-    ; Clear flag just to make sure 
+    ; ========================================
+    ; TICK PROCESSING (once per 0.5 seconds)
+    ; ========================================
+    
+    ; Clear tick flag
     ldi r16, 0
     sts simulation_tick_flag, r16
-    
-    ; Keypad 
-    call scan_keypad_simple    ; Scan keypad 
-    call process_key           ; Process any key press
-    ; 
     
     ; Show progress: route_index on LEDs
     lds r16, route_index
@@ -149,7 +218,7 @@ main_loop:
     ; Decrement hover counter and skip movement
     dec r16
     sts hovering_counter, r16
-    rjmp main_loop
+    rjmp tick_done              ; ? Use rjmp (short jump)
     
 not_hovering:
     ; Check if done
@@ -161,10 +230,12 @@ not_hovering:
     cpi r16, 'C'
     breq route_crashed
     
-    ; Check if paused
+    ; Check if paused - INVERTED CONDITION
     cpi r16, 'P'
-    breq main_loop            ; Don't move if paused
+    brne continue_flying
+    rjmp tick_done              ; ? Paused, skip movement
     
+continue_flying:
     ; Move drone one step
     call update_drone_position
     
@@ -175,11 +246,15 @@ not_hovering:
     
     ; Check if arrived at waypoint
     tst r16
-    breq main_loop
+    brne waypoint_arrived
+    rjmp tick_done              ; ? Not arrived yet
     
+waypoint_arrived:
     ; Arrived! Advance to next waypoint
     call advance_waypoint
-    rjmp main_loop
+    
+tick_done:
+    jmp main_loop               ; ? Absolute jump back to top
 
 ; ============================================================================
 ; END STATES

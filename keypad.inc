@@ -4,26 +4,11 @@
 
 jmp end_keypad_simple
 
-; PROCESS_KEY 
-process_key:
+
+; PROCESS_KEY_NO_PAUSE - Altitude and Speed only (NOT pause)
+
+process_key_no_pause:
     push r17
-    
-    ; Handle pause first (Key 0 hold = pause, release = resume)
-    cpi r16, '0'
-    breq key_pause_hold
-    
-    ; No key or other key pressed - resume if paused
-    lds r17, drone_state
-    cpi r17, 'P'
-    brne check_other_keys
-    
-    ; Was paused, now resume
-    ldi r17, 'F'
-    sts drone_state, r17
-    
-check_other_keys:
-    cpi r16, 0xFF           ; No key pressed?
-    breq process_key_end
     
     ; Key 1 = Altitude UP
     cpi r16, '1'
@@ -41,12 +26,6 @@ check_other_keys:
     cpi r16, '5'
     breq key_speed_down
     
-    rjmp process_key_end
-
-key_pause_hold:
-    ; Holding Key 0 = Pause
-    ldi r17, 'P'
-    sts drone_state, r17
     rjmp process_key_end
 
 key_alt_up:
@@ -75,7 +54,7 @@ key_speed_up:
 
 key_speed_down:
     lds r16, drone_speed
-    cpi r16, 1              ; Don't go below 1
+    cpi r16, 1
     breq process_key_end
     dec r16
     sts drone_speed, r16
