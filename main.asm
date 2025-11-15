@@ -40,6 +40,11 @@ route_locations: .byte 15*15*3
 cur_route_size: .byte 1
 cur_route_locations: .byte 20
 
+.org main_map_memory_start+750+675+1+1+20
+crash_x: .byte 1
+crash_y: .byte 1
+vis_val: .byte 1
+
 ; ============================================================================
 ; CODE SEGMENT
 ; ============================================================================
@@ -96,7 +101,7 @@ store_map_loop:
 	; It worked fine on the simulator with debugger 
     ldi YL, low(explored_map_start)
     ldi YH, high(explored_map_start)
-    ldi r17, 49              ; 7×7 = 49
+    ldi r17, 49              ; 7ï¿½7 = 49
     ldi r16, 0
 clear_explored:
     st Y+, r16
@@ -105,6 +110,11 @@ clear_explored:
 
 ; -----------Added by Tom---------------
 	.include "lcd_display.inc"
+	reset_screen
+; --------------------------------------
+
+; -----------Added by Mo----------------
+	.include "keypad.inc"
 	reset_screen
 ; --------------------------------------
 
@@ -293,7 +303,6 @@ route_crashed:
 .include "led.inc"
 .include "timer.inc"
 .include "movement.inc"
-.include "keypad.inc"
 .include "random_number.inc"
 .include "route_generation.inc"
 .include "path_between_two_points.inc"
@@ -572,7 +581,7 @@ store_map_loop:
 	; May be memory overlap or corruption or idk
     ldi YL, low(explored_map_start)
     ldi YH, high(explored_map_start)
-    ldi r17, 49              ; 7×7 = 49
+    ldi r17, 49              ; 7ï¿½7 = 49
     ldi r16, 0
 
 clear_explored:
