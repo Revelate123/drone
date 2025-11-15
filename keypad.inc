@@ -305,6 +305,7 @@ get_visibility_value:
 ; will max at 99 if inputted more than 99
 ; will max at 2 digit input
 msg_visibility: .db "vis:",0
+    do_lcd_command 0b11000000
 	input_msg_to_display msg_visibility, 0
 get_vis_prologue:
 	push r16						; used for taking value of scan_keypad_simple
