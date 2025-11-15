@@ -86,27 +86,36 @@ rjmp end_of_file
 
 .macro input_msg_to_display
 	; @0 is the message from pmem
+	; @1=0: keep cursor at the end, @1=1: move cursor back to home
 	; uses ZL, ZH, r17, r18, r19 pls do stack init for this
 	; clear counter (r17)
 	; temp = r18
-	; delaycounter (r19)
-	ldi ZL, low(@0<<1)
-	ldi ZH, high(@0<<1)
-	rcall print_multiple
-.endmacro
-
-.def temp=r18
-print_multiple:
+	; delay counter (r19)
+	; keeping cursor option (r20)
 	push r17
 	push r18
+	push r20
 	push ZL
 	push ZH
+	ldi ZL, low(@0<<1)
+	ldi ZH, high(@0<<1)
+	ldi r20, @1
+	rcall print_multiple
+	pop ZH
+	pop ZL
+	pop r20
+	pop r18
+	pop r17
+
+.endmacro
+
+print_multiple:
 	clr r17
 print_loop:
 	lpm r18, Z+
 	tst r18
 	breq print_done
-	do_lcd_data_from_reg temp
+	do_lcd_data_from_reg r18
 	inc r17						; increase counter
 	rjmp print_loop
 print_done:
@@ -115,6 +124,8 @@ print_done:
 	rcall sleep_500ms
 	; if r17 counter is more than 16 (visible LCD) -> scroll
 	mov r18, r17
+	cpi r18, 17
+	brlo fin_scrolling
 lcd_overflow_check:
 	cpi r18, 17
 	brlo fin_scrolling
@@ -123,12 +134,11 @@ lcd_overflow_check:
 	dec r18
 	rjmp lcd_overflow_check
 fin_scrolling:
-	rcall sleep_500ms
+	tst r20
+	breq skip_back_to_home
 	lcd_back_to_home
-	pop ZH
-	pop ZL
-	pop r18
-	pop r17
+skip_back_to_home:
+	rcall sleep_500ms
 	ret
 
 display_route_points:
