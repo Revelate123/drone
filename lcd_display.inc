@@ -278,7 +278,94 @@ display_path_2_epilogue:		; BRANCH
 	ret
 
 
+update_status:
+	; r21 includes the status
+	; r21 = 0 Fly
+	; r21 = 1 Hover/Pause
+	; r21 = 2 Crash
+update_status_prologue:
+	do_lcd_command 0b11000001
+	push r21
+update_status_body:
+	cpi r21, 1
+	brsh pause_or_crash
+	do_lcd_data 'F'
+	rjmp update_status_epilogue
+pause_or_crash:
+	cpi r21, 2
+	breq crash
+	do_lcd_data 'P'
+	rjmp update_status_epilogue
+crash:
+	do_lcd_data 'C'
+update_status_epilogue:
+	pop r21
+	ret
 
+update_speed:
+	; r21 had the speed value in dm/s
+	; max is 29 m/s
+update_speed_prologue:
+	do_lcd_command 0b11000110
+	push r21
+	cpi r21, 20
+	brsh print_20s
+	cpi r21, 10
+	brsh print_10s
+	do_lcd_command 0b11000111
+	subi r21, -'0'
+	do_lcd_data_from_reg r21
+	rjmp update_speed_epilogue
+print_20s:
+	do_lcd_data '2'
+	subi r21, 20
+	subi r21, -'0'
+	do_lcd_data_from_reg r21
+	rjmp update_speed_epilogue
+print_10s:
+	do_lcd_data '1'
+	subi r21, 10
+	subi r21, -'0'
+	do_lcd_data_from_reg r21
+	rjmp update_speed_epilogue
+update_speed_epilogue:
+	do_lcd_data 'm'
+	do_lcd_data '/'
+	do_lcd_data 's'
+	rcall sleep_50ms			; for buffer, to be able to see
+	pop r21
+	ret
+
+update_height:
+	; r21 had the speed value in m
+	; max is 15 m
+update_height_prologue:
+	do_lcd_command 0b11001110
+	push r21
+	cpi r21, 20
+	brsh print_20s_h
+	cpi r21, 10
+	brsh print_10s_h
+	do_lcd_command 0b11001111
+	subi r21, -'0'
+	do_lcd_data_from_reg r21
+	rjmp update_height_epilogue
+print_20s_h:
+	do_lcd_data '2'
+	subi r21, 20
+	subi r21, -'0'
+	do_lcd_data_from_reg r21
+	rjmp update_height_epilogue
+print_10s_h:
+	do_lcd_data '1'
+	subi r21, 10
+	subi r21, -'0'
+	do_lcd_data_from_reg r21
+	rjmp update_height_epilogue
+update_height_epilogue:
+	rcall sleep_50ms			; for buffer, to be able to see
+	pop r21
+	ret
 
 ;
 ; Send a command to the LCD (r16)
