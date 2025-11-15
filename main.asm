@@ -1,11 +1,232 @@
-;
 ; Assignment.asm
 ;
 ; Created: 26/10/2025 7:19:05 am
 ; Author : thoma
 ;
+; LED functions are for testing without LCD 
+.include "m2560def.inc"
+
+.equ main_map_memory_start = 0x0206
+.equ visibility_map_offset = 251
+.equ explored_map_offset = 500
+
+; ============================================================================
+; DATA SEGMENT
+; ============================================================================
+.dseg
+
+; Main map
+.org main_map_memory_start
+main_map_size: .byte 1
+main_map_start: .byte 15*15
+
+; Visibility map
+.org main_map_memory_start+visibility_map_offset
+visibility_map_size: .byte 1
+visibility_map_start: .byte 15*15
+
+; Explored map
+.org main_map_memory_start+explored_map_offset
+explored_map_size: .byte 1
+explored_map_start: .byte 15*15
+
+; Route from generation
+.org main_map_memory_start+750
+route_size: .byte 1
+route_locations: .byte 15*15*3
+
+; Current path waypoints
+.org main_map_memory_start+750+675+1
+cur_route_size: .byte 1
+cur_route_locations: .byte 20
+
+; ============================================================================
+; CODE SEGMENT
+; ============================================================================
+.cseg
+.org 0x0000
+    jmp RESET
+.org OC1Aaddr              
+    jmp TIMER1_COMPA
+.org 0x003A
+    jmp DEFAULT
+DEFAULT: reti
+
+; ============================================================================
+; RESET
+; ============================================================================
+RESET:
+    ldi r16, low(RAMEND)
+    out SPL, r16
+    ldi r16, high(RAMEND)
+    out SPH, r16
+
+    call init_led              ; Initialize LED
+    call init_keypad_simple    ; Initialize keypad
+    
+    jmp main
+
+; ============================================================================
+; MAIN SETUP
+; ============================================================================
+main:
+    ; Load map from flash to SRAM
+    ldi ZL, low(map_size<<1)
+    ldi ZH, high(map_size<<1)
+    LPM r16, Z
+    sts main_map_size, r16
+    sts visibility_map_size, r16
+    sts explored_map_size, r16
+    
+    ldi ZL, low(map<<1)
+    ldi ZH, high(map<<1)
+    ldi YL, low(main_map_start)
+    ldi YH, high(main_map_start)
+    mul r16, r16
+    mov r16, r0
+    
+store_map_loop:
+    LPM r17, Z+
+    st Y+, r17
+    dec r16
+    brne store_map_loop
+
+	; CRITICAL: Clear explored_map before route generation
+	; Without this, timer never worked and generte route always gave me the value of 1 instead of (6) on the hardware
+	; It worked fine on the simulator with debugger 
+    ldi YL, low(explored_map_start)
+    ldi YH, high(explored_map_start)
+    ldi r17, 49              ; 7×7 = 49
+    ldi r16, 0
+clear_explored:
+    st Y+, r16
+    dec r17
+    brne clear_explored
+
+    ; Generate observation route
+    call generate_route
+    
+    ; Initialize drone at first observation point
+    call initialize_drone
+    
+    ; Starting timer 
+    call init_simulation_timer
+    
+    ; Initialize counters
+    ldi r16, 0
+    sts hovering_counter, r16
+    sts simulation_tick_flag, r16
+    sts simulation_counter, r16
+    sts simulation_counter+1, r16
+
+; ============================================================================
+; MAIN LOOP 
+; ============================================================================
+main_loop:
+    ; Wait for timer tick (0.5 seconds)
+    lds r16, simulation_tick_flag
+    cpi r16, 1
+    brne main_loop
+    
+    ; Clear flag just to make sure 
+    ldi r16, 0
+    sts simulation_tick_flag, r16
+    
+    ; Keypad 
+    call scan_keypad_simple    ; Scan keypad 
+    call process_key           ; Process any key press
+    ; 
+    
+    ; Show progress: route_index on LEDs
+    lds r16, route_index
+    call show_led_progress
+    
+    ; Check if hovering
+    lds r16, hovering_counter
+    cpi r16, 0
+    breq not_hovering
+    
+    ; Decrement hover counter and skip movement
+    dec r16
+    sts hovering_counter, r16
+    rjmp main_loop
+    
+not_hovering:
+    ; Check if done
+    lds r16, drone_state
+    cpi r16, 'D'
+    breq route_complete
+    
+    ; Check if crashed
+    cpi r16, 'C'
+    breq route_crashed
+    
+    ; Check if paused
+    cpi r16, 'P'
+    breq main_loop            ; Don't move if paused
+    
+    ; Move drone one step
+    call update_drone_position
+    
+    ; Check collision (save arrival status first)
+    push r16
+    call check_collision
+    pop r16
+    
+    ; Check if arrived at waypoint
+    tst r16
+    breq main_loop
+    
+    ; Arrived! Advance to next waypoint
+    call advance_waypoint
+    rjmp main_loop
+
+; ============================================================================
+; END STATES
+; ============================================================================
+route_complete:
+    ; Show all LEDs for completion
+    ldi r16, 8
+    call show_led_progress
+    rjmp route_complete
+
+route_crashed:
+    ; Flash LEDs continuously
+    lds r16, simulation_tick_flag
+    cpi r16, 1
+    brne route_crashed
+    
+    ldi r16, 0
+    sts simulation_tick_flag, r16
+    
+    call flash_led_continuous
+    rjmp route_crashed
+
+; ============================================================================
+; INCLUDES
+; ============================================================================
+.include "library.inc"
+.include "drone_data.inc"
+.include "led.inc"
+.include "timer.inc"
+.include "movement.inc"
+.include "keypad.inc"
+.include "random_number.inc"
+.include "route_generation.inc"
+.include "path_between_two_points.inc"
+.include "drone_control.inc"
+.include "collision_detection.inc" 
+
+; ============================================================================
+; FLASH DATA - 7x7 Map
+; ============================================================================
+.org 0x4000
+map_size: .db 7
+map: 
+    .db 0,0,0,0,0,0,0 ,     0,2,2,2,2,2,0,     0,2,4,4,4,2,0,     0,2,4,6,4,2,0,     0,2,4,4,4,2,0,     0,2,2,2,2,2,0,     0,0,0,0,0,0,0
 
 
+/* Working Version 0 without timer and keypad
 .include "m2560def.inc"
 
 .equ main_map_memory_start = 0x0206
@@ -22,7 +243,6 @@
 .org main_map_memory_start
 main_map_size: .byte 1
 main_map_start: .byte 15*15
-
 
 
 ; Is the copy of the map for visibility
@@ -67,86 +287,89 @@ RESET:
     out SPL, r16
     ldi r16, high(RAMEND)
     out SPH, r16
-
-    call init_led
-    call init_led_flash
-    call init_keypad_simple     ; Initialize keypad on PORTL
-
-  
  
-	
-    ;cpi r16, 0
-    ;brne error_flash
-    ;call init_simulation_timer
-
     jmp main
 
-error_flash:
-    call flash_led_continuous
-    rjmp error_flash
-
-
-
 ; ============================================================================
-; MAIN LOOP - WITH KEYPAD CONTROL
+; MAIN LOOP
 ; ============================================================================
 main:
-	ldi ZL , low(map_size<<1)
-	ldi ZH, high(map_size<<1)
-	LPM r16, Z
-	sts main_map_size, r16
-	sts visibility_map_size, r16
-	sts explored_map_size, r16
-	ldi ZL, low(map<<1)
-	ldi ZH, high(map<<1)
-	ldi YL, low(main_map_start)
-	ldi YH, high(main_map_start)
-	mul r16, r16
-	mov r16, r0
-	store_map_loop:
-		LPM r17, Z+
-		st Y+, r17
-		dec r16
-		brne store_map_loop
 
-	nop
-	
-	call generate_route
 
-/*
-main_loop:
-    ; Scan keypad (non-blocking)
-    call scan_keypad_simple
-    call process_key
+    ldi ZL , low(map_size<<1)
+    ldi ZH, high(map_size<<1)
+    LPM r16, Z
+    sts main_map_size, r16
+    sts visibility_map_size, r16
+    sts explored_map_size, r16
+    ldi ZL, low(map<<1)
+    ldi ZH, high(map<<1)
+    ldi YL, low(main_map_start)
+    ldi YH, high(main_map_start)
+    mul r16, r16
+    mov r16, r0
+    store_map_loop:
+        LPM r17, Z+
+        st Y+, r17
+        dec r16
+        brne store_map_loop
+
+    nop
     
-    ; Wait for timer tick
-    lds r16, simulation_tick_flag
-    cpi r16, 0
-    breq main_loop
+    call generate_route
+
+	; Uncomment for debugging
+    ;nop 
+
+    call initialize_drone
     
+	; nop        ; debug point
+
+	; Initialize hovering counter to 0
     ldi r16, 0
-    sts simulation_tick_flag, r16
+    sts hovering_counter, r16
     
-    ; Move drone
-    call update_drone_position
-    tst r16
-    breq no_arrival
-    
-    ; Arrived -> next waypoint
-    lds r16, route_index
-    inc r16
-    sts route_index, r16
+  
 
 
-no_arrival:
-    ; Show position on LED
-    lds r16, drone_current_x
-    out PORTC, r16
+main_loop:
 
-	
+    ; Check if hovering
+    lds r16, hovering_counter
+    cpi r16, 0
+    breq not_hovering
     
+    dec r16
+    sts hovering_counter, r16
     rjmp main_loop
-*/
+
+not_hovering:
+    lds r16, drone_state
+    cpi r16, 'D'
+    breq route_complete
+    
+    cpi r16, 'C'
+    breq route_crashed
+	
+    call update_drone_position
+    
+    ; SAVE arrival status before collision check
+    push r16                  ; ? NEW
+    call check_collision
+    pop r16                   ; ? NEW (restore arrival status)
+    
+    tst r16                   ; Now checks correct value!
+    breq main_loop
+
+    call advance_waypoint
+    rjmp main_loop
+	
+route_complete:
+    rjmp route_complete
+
+route_crashed:
+    rjmp route_crashed
+
 ; ============================================================================
 ; INCLUDES
 ; ============================================================================
@@ -158,7 +381,10 @@ no_arrival:
 .include "keypad.inc"
 .include "random_number.inc"
 .include "route_generation.inc"
-.include "lcd_display.inc"
+.include "path_between_two_points.inc"
+.include "drone_control.inc"
+.include "collision_detection.inc" 
+
 ; ============================================================================
 ; FLASH DATA
 ; ============================================================================
@@ -166,14 +392,223 @@ no_arrival:
 map_size: .db 7
 map: 
     .db 0,0,0,0,0,0,0 ,     0,2,2,2,2,2,0,     0,2,4,4,4,2,0,     0,2,4,6,4,2,0,     0,2,4,4,4,2,0,     0,2,2,2,2,2,0,     0,0,0,0,0,0,0
+*/
 
-	/*
+/* Working Version 1 with Timer
+;
 
+.include "m2560def.inc"
 
+.equ main_map_memory_start = 0x0206
+.equ visibility_map_offset = 251
+.equ explored_map_offset = 500
 
+; ============================================================================
+; DATA SEGMENT
+; ============================================================================
+.dseg
 
+; Main map
+.org main_map_memory_start
+main_map_size: .byte 1
+main_map_start: .byte 15*15
 
+; Visibility map
+.org main_map_memory_start+visibility_map_offset
+visibility_map_size: .byte 1
+visibility_map_start: .byte 15*15
 
-finished:
-	rjmp finished
-	*/
+; Explored map
+.org main_map_memory_start+explored_map_offset
+explored_map_size: .byte 1
+explored_map_start: .byte 15*15
+
+; Route from generation
+.org main_map_memory_start+750
+route_size: .byte 1
+route_locations: .byte 15*15*3
+
+; Current path waypoints
+.org main_map_memory_start+750+675+1
+cur_route_size: .byte 1
+cur_route_locations: .byte 20
+
+; ============================================================================
+; CODE SEGMENT
+; ============================================================================
+.cseg
+.org 0x0000
+    jmp RESET
+.org OC1Aaddr              
+    jmp TIMER1_COMPA
+.org 0x003A
+    jmp DEFAULT
+DEFAULT: reti
+
+; ============================================================================
+; RESET
+; ============================================================================
+RESET:
+    ldi r16, low(RAMEND)
+    out SPL, r16
+    ldi r16, high(RAMEND)
+    out SPH, r16
+
+    call init_led
+    
+    jmp main
+
+; ============================================================================
+; MAIN SETUP
+; ============================================================================
+main:
+    ; Load map from flash to SRAM
+    ldi ZL, low(map_size<<1)
+    ldi ZH, high(map_size<<1)
+    LPM r16, Z
+    sts main_map_size, r16
+    sts visibility_map_size, r16
+    sts explored_map_size, r16
+    
+    ldi ZL, low(map<<1)
+    ldi ZH, high(map<<1)
+    ldi YL, low(main_map_start)
+    ldi YH, high(main_map_start)
+    mul r16, r16
+    mov r16, r0
+    
+store_map_loop:
+    LPM r17, Z+
+    st Y+, r17
+    dec r16
+    brne store_map_loop
+
+    ; CRITICAL: Clear explored_map before route generation
+	; Without this, timer never worked and generte route always gave me the value of 1 instead of (6) on the hardware
+	; It worked fine on the simulator with debugger 
+	; May be memory overlap or corruption or idk
+    ldi YL, low(explored_map_start)
+    ldi YH, high(explored_map_start)
+    ldi r17, 49              ; 7×7 = 49
+    ldi r16, 0
+
+clear_explored:
+    st Y+, r16
+    dec r17
+    brne clear_explored
+
+    ; Generate observation route
+    call generate_route
+    
+    ; Initialize drone at first observation point
+    call initialize_drone
+    
+    ; NOW start timer AFTER everything is ready
+	; Uncomment all the code to work on hardware with timer
+	; Comment them if you want to see anything on the debugger
+    ;call init_simulation_timer
+    
+    ; Initialize counters
+    ldi r16, 0
+    sts hovering_counter, r16
+    ;sts simulation_tick_flag, r16
+    ;sts simulation_counter, r16
+    ;sts simulation_counter+1, r16
+
+; ============================================================================
+; MAIN LOOP
+; ============================================================================
+main_loop:
+    ; Wait for timer tick (0.5 seconds)
+    ;lds r16, simulation_tick_flag
+    ;cpi r16, 1
+    ;brne main_loop
+    
+    ; Clear flag
+    ;ldi r16, 0
+    ;sts simulation_tick_flag, r16
+    
+    ; Show progress: route_index on LEDs
+    ;lds r16, route_index
+    ;call show_led_progress
+    
+    ; Check if hovering
+    lds r16, hovering_counter
+    cpi r16, 0
+    breq not_hovering
+    
+    ; Decrement hover counter and skip movement
+    dec r16
+    sts hovering_counter, r16
+    rjmp main_loop
+    
+not_hovering:
+    ; Check if done
+    lds r16, drone_state
+    cpi r16, 'D'
+    breq route_complete
+    
+    ; Check if crashed
+    cpi r16, 'C'
+    breq route_crashed
+    
+    ; Move drone one step
+    call update_drone_position
+    
+    ; Check collision (save arrival status first)
+    push r16
+    call check_collision
+    pop r16
+    
+    ; Check if arrived at waypoint
+    tst r16
+    breq main_loop
+    
+    ; Arrived! Advance to next waypoint
+    call advance_waypoint
+    rjmp main_loop
+
+; ============================================================================
+; END STATES
+; ============================================================================
+route_complete:
+    ; Show all LEDs for completion
+    ldi r16, 8
+    call show_led_progress
+    rjmp route_complete
+
+route_crashed:
+    ; Flash LEDs continuously
+    lds r16, simulation_tick_flag
+    cpi r16, 1
+    brne route_crashed
+    
+    ldi r16, 0
+    sts simulation_tick_flag, r16
+    
+    call flash_led_continuous
+    rjmp route_crashed
+
+; ============================================================================
+; INCLUDES
+; ============================================================================
+.include "library.inc"
+.include "drone_data.inc"
+.include "led.inc"
+.include "timer.inc"
+.include "movement.inc"
+.include "keypad.inc"
+.include "random_number.inc"
+.include "route_generation.inc"
+.include "path_between_two_points.inc"
+.include "drone_control.inc"
+.include "collision_detection.inc" 
+
+; ============================================================================
+; FLASH DATA - 7x7 Map
+; ============================================================================
+.org 0x4000
+map_size: .db 7
+map: 
+    .db 0,0,0,0,0,0,0 ,     0,2,2,2,2,2,0,     0,2,4,4,4,2,0,     0,2,4,6,4,2,0,     0,2,4,4,4,2,0,     0,2,2,2,2,2,0,     0,0,0,0,0,0,0
+*/ 

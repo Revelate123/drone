@@ -19,18 +19,15 @@ rjmp end_of_file
 
 .macro do_lcd_command
 	ldi r16, @0
-	rcall lcd_command
-	rcall lcd_wait
+	call lcd_command
+	call lcd_wait
 .endmacro
+
+
 .macro do_lcd_data
-	ldi r16, @0
-	rcall lcd_data
-	rcall lcd_wait
-.endmacro
-.macro do_lcd_data_from_reg
 	mov r16, @0
-	rcall lcd_data
-	rcall lcd_wait
+	call lcd_data
+	call lcd_wait
 .endmacro
 
 ;----------------------------------------------------------------------------------------------------
@@ -449,7 +446,7 @@ sleep_5ms:
 	ret
 
 ;----------------------------------------------------------------------------------------------------
-; additional sleep commands were added of longer durations.
+; Two additional sleep commands were added of longer durations.
 sleep_50ms:
 	rcall sleep_5ms
 	rcall sleep_5ms
@@ -464,19 +461,6 @@ sleep_50ms:
 	ret
 
 sleep_200ms:
-	rcall sleep_50ms
-	rcall sleep_50ms
-	rcall sleep_50ms
-	rcall sleep_50ms
-	ret
-
-sleep_500ms:
-	rcall sleep_50ms
-	rcall sleep_50ms
-	rcall sleep_50ms
-	rcall sleep_50ms
-	rcall sleep_50ms
-	rcall sleep_50ms
 	rcall sleep_50ms
 	rcall sleep_50ms
 	rcall sleep_50ms

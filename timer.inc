@@ -1,16 +1,12 @@
-; ============================================================================
+
 ; timer.inc
-; ============================================================================
-; Timer system for 0.5-second simulation ticks (2 Hz)
-; ============================================================================
 
 jmp end_timer
 
-; ============================================================================
+
 ; INIT_SIMULATION_TIMER
 ; Configures Timer1 for 0.5-second simulation ticks (2 Hz)
 ; Uses CTC mode with OCR1A compare match
-; ============================================================================
 init_simulation_timer:
 init_simulation_timer_prologue:
     push r16
@@ -46,10 +42,9 @@ init_simulation_timer_epilogue:
     pop r16
     ret
 
-; ============================================================================
+
 ; TIMER1_COMPA ISR
 ; Triggered every 0.5 seconds (2 Hz)
-; ============================================================================
 TIMER1_COMPA:
 TIMER1_COMPA_prologue:
     push r16

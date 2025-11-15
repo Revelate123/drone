@@ -1,6 +1,6 @@
-; ============================================================================
+
 ; drone_data.inc
-; ============================================================================
+; Might need to check/change memory addresses for bigger map 
 
 jmp end_drone_data
 
@@ -40,27 +40,7 @@ last_key_pressed: .byte 1         ; 0x07C3
 
 distance_to_target: .byte 1       ; 0x07C4
 current_mountain_height: .byte 1  ; 0x07C5
-
+current_waypoint_index: .byte 1   ; 0x07C6  
 .cseg
-
-; Constants unchanged...
-.equ PORTFDIR = 0xF0
-.equ ROWMASK = 0x0F
-.equ INITCOLMASK = 0xEF
-.equ INITROWMASK = 0x01
-
-.equ KEY_1 = 0
-.equ KEY_2 = 1
-.equ KEY_4 = 4
-.equ KEY_5 = 5
-.equ KEY_0 = 13
-.equ NO_KEY = 0xFF
-
-.equ MAX_ALTITUDE = 100
-.equ MIN_ALTITUDE = 0
-.equ MAX_SPEED = 20
-.equ MIN_SPEED = 1
-
-.equ HOVER_DURATION = 30
 
 end_drone_data:
