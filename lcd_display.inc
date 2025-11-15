@@ -127,6 +127,158 @@ fin_scrolling:
 	pop r17
 	ret
 
+display_route_points:
+display_route_prologue:
+	reset_screen
+	push XL
+	push XH
+	push r16
+	push r17	; this is route_size
+	push r18	; this is for the content
+	push r19	; this is for char_counter
+	push r20	; this is for x, y, z stages
+				; found x. r20 = 0 || found y. r20 = 1 || found z. r20 = 2
+	ldi XL, low(route_size_sram)
+	ldi XH, high(route_size_sram)
+	; we want to read the next route_size * 3
+	ldi r16, 3	; 3: this is for x, y, z
+	ld r17, X+
+	mul r17, r16
+	mov r17, r0 ; now r17 contains how much next byte to read
+	clr r20
+	clr r1
+	clr r16
+	clr r19
+
+display_route_loop:
+	ld r18, X+					; value saved in r18; max 15
+	dec r17						; route value printed -1
+
+	; print here, max value is 15
+
+	cpi r18, 10
+	brlo lower_than_10
+	do_lcd_data '1'				; print 10s, printing '1'
+	inc r19						; inc counter for char display	
+
+lower_than_10:
+	subi r18, -'0'				; digit to ascii
+	do_lcd_data_from_reg r18	; print 1s, printing from r18
+	inc r19						; inc counter for char display
+
+	cpi r20, 2					; stage check
+	brsh found_xyz
+
+	do_lcd_data ','				; still haven't completed (x,y,z)
+	inc r19						; inc counter for char display
+	inc r20						; inc counter for stage; find x->y->z
+	rjmp display_route_loop		; find next value
+	
+found_xyz:						; found (x,y,z) complete pair
+	do_lcd_data '/'				; print slash for distinction
+	inc r19						; inc counter for char display
+	clr r20						; clear stage
+	cpi r17, 0					; compare with 0, end of route?
+	brne display_route_loop		; find next value set
+	rcall sleep_500ms
+
+lcd_overflow_check_:
+	cpi r19, 17					; compare length of data to max display 0-16 chars
+	brlo display_route_epilogue
+	lcd_shift_left
+	rcall sleep_500ms
+	dec r19
+	rjmp lcd_overflow_check_
+display_route_epilogue:
+	rcall sleep_500ms
+	lcd_back_to_home
+	pop r20
+	pop r19
+	pop r18
+	pop r17
+	pop r16
+	pop XH
+	pop XL
+	ret
+
+display_path_between_two_points:
+display_path_2_prologue:
+	reset_screen
+	push XL
+	push XH
+	push r16
+	push r17	; this is path_size
+	push r18	; this is for the content
+	push r19	; this is for display_char_counter
+	push r20	; this is for x, y stages
+				; found x. r20 = 0 || found y. r20 = 1
+	ldi XL, low(cur_route_size)								; POSSIBLE MACRO @0
+	ldi XH, high(cur_route_size)
+	; we want to read the next route_size * 3
+	ldi r16, 2	; 2: this is for x, y						; POSSIBLE MACRO @1
+	ld r17, X+
+	mul r17, r16
+	mov r17, r0 ; now r17 contains how much next byte to read
+	clr r20
+	clr r1
+	clr r16
+	clr r19
+
+display_path_2_loop:
+	ld r18, X+					; value saved in r18; max 15
+	dec r17						; route value printed -1
+
+	; print here, max value is 15
+
+	cpi r18, 10
+	brlo lower_than_10_			; BRANCH
+	do_lcd_data '1'				; print 10s, printing '1'
+	inc r19						; inc counter for char display	
+
+lower_than_10_:					; BRANCH
+	subi r18, -'0'				; digit to ascii
+	do_lcd_data_from_reg r18	; print 1s, printing from r18
+	inc r19						; inc counter for char display
+
+	cpi r20, 1					; BRANCH stage check
+	brsh found_xy				; BRANCH
+
+	do_lcd_data ','				; still haven't completed (x,y)
+	inc r19						; inc counter for char display
+	inc r20						; inc counter for stage; find x->y
+	rjmp display_path_2_loop	; BRANCH find next value
+	
+found_xy:						; BRANCH found (x,y) complete pair
+	do_lcd_data '/'				; print slash for distinction
+	inc r19						; inc counter for char display
+	clr r20						; clear stage
+	cpi r17, 0					; compare with 0, end of route?
+	brne display_path_2_loop	; BRANCH find next value set
+	rcall sleep_500ms
+
+lcd_overflow_check__:			; BRANCH
+	cpi r19, 17					; compare length of data to max display 0-16 chars
+	brlo display_path_2_epilogue
+	lcd_shift_left
+	rcall sleep_500ms
+	dec r19
+	rjmp lcd_overflow_check__	; BRANCH
+
+display_path_2_epilogue:		; BRANCH
+	rcall sleep_500ms
+	lcd_back_to_home
+	pop r21
+	pop r20
+	pop r19
+	pop r18
+	pop r17
+	pop r16
+	pop XH
+	pop XL
+	ret
+
+
+
 
 ;
 ; Send a command to the LCD (r16)
