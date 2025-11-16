@@ -378,51 +378,7 @@ input_z_values_epilogue:
 	pop ZL
 	ret
 
-; Gets the z-value at (x, y) coordinates from main map
-; Parameters: 
-	; x coord: in r20
-	; y coord: in r21
-; Returns:
-	; z coord in r22
-; Uses:
-	; r16 - temp
-	; r17 - size
-	; r18 - counter
-get_value_at_coords:
-get_value_at_coords_prologue:
-	push ZL
-	push ZH
-	push r16
-	push r17
-	push r18
-get_value_at_coords_body:
-	ldi ZL, low(main_map_size)
-	ldi ZH, high(main_map_size)
-	ld r17, Z+ ; loads size for calculation
 
-	; Calculate offset: Y*size + X
-	mul r21, r17 
-	add r0, r20 ; add X to result of multiplcation (in r0)
-	mov r18, r0
-	; Now our offset is located in r0
-		; using a loop as ldd has offset <= 63 (we could need to go bigger)
-	location_loop:
-		cpi r18, 0
-		breq found_value
-
-		adiw Z, 1
-		dec r18
-		rjmp location_loop
-
-	found_value:
-	ld r22, Z
-get_value_at_coords_epilogue:
-	pop r18
-	pop r17
-	pop r16
-	pop ZH
-	pop ZL
-	ret
 
 
 ; Clears the visibility map
