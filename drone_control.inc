@@ -37,11 +37,13 @@ initialize_drone:
     sts drone_state, r16
     
     ; Set initial speed
-    ldi r16, 5               ; Can change speed here for testing 
+    ldi r16, 10               ; Can change speed here for testing 
     sts drone_speed, r16
 
 	; Set initial altitude - Debugging with low altitude for now
-    ldi r16, 2              ; Low altitude - will crash // High altitude (10) - will safe pass 
+	ldi ZL, low(main_map_start)
+	ldi ZH, high(main_map_start)
+	ld r16, Z
     sts drone_altitude, r16
     
     ; Generate path to next observation point
