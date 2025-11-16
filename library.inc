@@ -2,6 +2,42 @@
 
 jmp end_lib
 
+load_map:
+load_map_prologue:
+push ZL
+push ZH
+push r16
+push r17
+load_map_body:
+    ; Load map from flash to SRAM
+    ldi ZL, low(map_size<<1)
+    ldi ZH, high(map_size<<1)
+    LPM r16, Z
+    sts main_map_size, r16
+    sts visibility_map_size, r16
+    sts explored_map_size, r16
+    
+    ldi ZL, low(map<<1)
+    ldi ZH, high(map<<1)
+    ldi YL, low(main_map_start)
+    ldi YH, high(main_map_start)
+    mul r16, r16
+    mov r16, r0
+    
+store_map_loop:
+    LPM r17, Z+
+    st Y+, r17
+    dec r16
+    brne store_map_loop
+
+load_map_epilogue:
+pop r17
+pop r16
+pop ZH
+pop ZL
+ret
+
+
 .macro swap_two_regs
 	mov r24, @0
 	mov @0, @1
