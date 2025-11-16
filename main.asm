@@ -46,12 +46,12 @@ crash_y: .byte 1
 vis_val: .byte 1                                ; start+1450
 
 .org main_map_memory_start+1450
-route_passed_counter: .byte 1
+cur_RtDisp_addr: .byte 2
 route_printed: .byte 9*15*15                    ; 9 chars / point, max all points iterated
 
-.org main_map_memory_start+3475
-path_passed_counter: .byte 1
-path_printed: .byte 9*10					; 9 chars / point, max 10 points in a path
+.org main_map_memory_start+3475+1
+cur_PtDisp_addr: .byte 2
+path_printed: .byte 9*10						; 9 chars / point, max 10 points in a path
 
 ; ============================================================================
 ; CODE SEGMENT
@@ -124,9 +124,19 @@ main:
 	wait_for_pb1:
 		sbic PIND, 1
 		rjmp wait_for_pb1
-	reset_screen
+	
+	; reset_screen ; Moses commented this so that the scrolling will work
 
-    
+	; rcall update_route 
+	; ^^^^^ this is to be called, when drone arrived to the next search point
+	; ^^^^^ this will update the route display by scrolling, ie
+	; ^^^^^ 0,0,0/3,5,0/7,8,0/...
+	; ^^^^^ ,0,0/3,5,0/7,8,0/...
+	; ^^^^^ 0,0/3,5,0/7,8,0/...
+    ; ^^^^^ ,0/3,5,0/7,8,0/...
+	; ^^^^^ 0/3,5,0/7,8,0/...
+	; ^^^^^ /3,5,0/7,8,0/...
+	; ^^^^^ 3,5,0/7,8,0/...
     
     ; Initialize drone at first observation point
     call initialize_drone
