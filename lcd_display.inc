@@ -40,10 +40,6 @@ rjmp end_of_file
 ; RESET was changed to the macro reset_screen and the default data displayed was deleted.
 ;----------------------------------------------------------------------------------------------------
 .macro reset_screen
-	ldi r16, low(RAMEND)
-	out SPL, r16
-	ldi r16, high(RAMEND)
-	out SPH, r16
 
 	ser r16
 	out DDRF, r16
@@ -152,8 +148,8 @@ display_route_prologue:
 	push r19	; this is for char_counter
 	push r20	; this is for x, y, z stages
 				; found x. r20 = 0 || found y. r20 = 1 || found z. r20 = 2
-	ldi XL, low(cur_route_size)
-	ldi XH, high(cur_route_size)
+	ldi XL, low(route_size)
+	ldi XH, high(route_size)
 	; we want to read the next route_size * 3
 	ldi r16, 3	; 3: this is for x, y, z
 	ld r17, X+
