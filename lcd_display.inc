@@ -153,8 +153,8 @@ display_route_prologue:
 	push r21	; this is for temp
 	push YL
 	push YH
-	ldi XL, low(route_size_sram)
-	ldi XH, high(route_size_sram)
+	ldi XL, low(route_size)
+	ldi XH, high(route_size)
 	ldi YL, low(route_printed)
 	ldi YH, high(route_printed)
 	; we want to read the next route_size * 3
