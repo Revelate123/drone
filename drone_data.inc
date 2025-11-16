@@ -29,6 +29,8 @@ movement_accumulator: .byte 1     ; 0x07BB
 
 route_index: .byte 1              ; 0x07BC
 
+; For storing the route location from
+; which the accident location is visible
 accident_x: .byte 1               ; 0x07BD
 accident_y: .byte 1               ; 0x07BE
 visibility_distance: .byte 2      ; 0x07BF-0x07C0
