@@ -157,6 +157,10 @@ display_route_prologue:
 	ldi XH, high(route_size)
 	ldi YL, low(route_printed)
 	ldi YH, high(route_printed)
+
+	sts cur_RtDisp_addr, YL			; saving address of route_printed to cur_RtDisp_addr
+	sts cur_RtDisp_addr+1, YH		; this is for the scrolling effect
+
 	; we want to read the next route_size * 3
 	ldi r16, 3	; 3: this is for x, y, z
 	ld r17, X+
@@ -359,6 +363,45 @@ display_path_2_epilogue:		; BRANCH
 	pop XH
 	pop XL
 	ret
+
+update_route:
+	; display next point in route by scrolling
+	; call this function to traverse to next point in display
+update_route_prologue:
+	push XL
+	push XH
+	push r16	
+	push r17
+	lds XL, cur_RtDisp_addr
+	lds XH, cur_RtDisp_addr+1
+update_route_loop:
+	ld r16, X+
+	cpi r16, '/'
+	breq found_slash
+	lcd_shift_left
+	rcall sleep_500ms
+	rjmp update_route_loop
+found_slash:
+	lcd_shift_left
+	rcall sleep_500ms
+	sts cur_RtDisp_addr, XL
+	sts cur_RtDisp_addr+1, XH
+update_route_epilogue:
+	rcall sleep_500ms
+	pop r16
+	pop r17
+	pop XH
+	pop XL
+	ret
+
+update_path:
+	; display next point in path between 2 pts by scrolling
+	; call this function to traverse to next point in display
+update_path_prologue:
+update_path_loop:
+update_path_epilogue:
+	ret
+
 
 
 update_status:
