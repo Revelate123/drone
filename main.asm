@@ -40,10 +40,18 @@ route_locations: .byte 15*15*3
 cur_route_size: .byte 1
 cur_route_locations: .byte 20
 
-.org main_map_memory_start+750+675+1+1+20
+.org main_map_memory_start+750+675+1+1+20       ; start+1447
 crash_x: .byte 1
 crash_y: .byte 1
-vis_val: .byte 1
+vis_val: .byte 1                                ; start+1450
+
+.org main_map_memory_start+1450
+route_passed_counter: .byte 1
+route_printed: .byte 9*15*15                    ; 9 chars / point, max all points iterated
+
+.org main_map_memory_start+3475
+path_passed_counter: .byte 1
+path_printed: .byte 9*10					; 9 chars / point, max 10 points in a path
 
 ; ============================================================================
 ; CODE SEGMENT
