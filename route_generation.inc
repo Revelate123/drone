@@ -66,6 +66,9 @@ generate_route_body:
 	clr route_size_reg
 	clr fully_explored_flag
 	clr counter
+
+	; Initialise explored map to zeros
+	call clear_explored_map
 		
 	; Set READ from visibility map
 	ldi XL, low(visibility_map_size)
@@ -205,9 +208,14 @@ setup_and_check_visibility_body:
 	ld r20, X  ; Load height into z1 (r20)
 
 	; Set visibility distance - TODO: currently hard coded, just need to set where we save this
+	lds r14, vis_val
+	mul r14, r14
+	mov r14, r0
+	mov r15, r1
+	/*
 	ldi temp, 3*3
 	mov r14, temp
-	clr r15
+	clr r15 */
 
 	; Now call the function with all parameters set
 	call check_visible_no_block
@@ -416,5 +424,31 @@ get_value_at_coords_epilogue:
 	pop ZL
 	ret
 
+
+; Clears the visibility map
+clear_explored_map:
+clear_explored_map_prologue:
+	push YL
+	push YH
+	push r18
+	push r19
+
+clear_explored_map_body:
+	ldi YL, low(explored_map_size)
+	ldi YH, high(explored_map_size)
+	ld r18, Y+
+	mul r18, r18
+	mov r18, r0
+	ldi r19, 0
+cem_loop:
+	st Y+, r19
+	dec r18
+	brne cem_loop
+clear_explored_map_epilogue:
+	pop r19
+	pop r18
+	pop YH
+	pop YL
+	ret
 
 end_route_generation:
