@@ -304,9 +304,11 @@ get_visibility_value:
 ; showing keypad presses into lcd and saves it to memory
 ; will max at 99 if inputted more than 99
 ; will max at 2 digit input
-msg_visibility: .db "vis:",0
+msg_visibility_1: .db "Enter visibility",0
+msg_visibility_2: .db "(00 - 26):",0
+	input_msg_to_display msg_visibility_1, 0
     do_lcd_command 0b11000000
-	input_msg_to_display msg_visibility, 0
+	input_msg_to_display msg_visibility_2, 0
 get_vis_prologue:
 	push r16						; used for taking value of scan_keypad_simple
 	push r17						; saving the value to memory
