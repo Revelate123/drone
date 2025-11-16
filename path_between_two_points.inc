@@ -59,6 +59,16 @@ path_between_two_points_body:
 		; Store current point in memory
 		st Z+, cur_x
 		st Z+, cur_y
+		push r20
+		push r21
+		push r22
+		mov r20, cur_x
+		mov r21, cur_y
+		call get_value_at_coords
+		st Z+, r22
+		pop r22
+		pop r21
+		pop r20
 
 		; Increment point counter
 		inc route_len
