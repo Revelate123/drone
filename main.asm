@@ -71,43 +71,22 @@ RESET:
     
     jmp main
 
+
+; ============================================================================
+; User Input Section
+; ============================================================================
+
+
+
+
+
+
 ; ============================================================================
 ; MAIN SETUP
 ; ============================================================================
 main:
-    ; Load map from flash to SRAM
-    ldi ZL, low(map_size<<1)
-    ldi ZH, high(map_size<<1)
-    LPM r16, Z
-    sts main_map_size, r16
-    sts visibility_map_size, r16
-    sts explored_map_size, r16
-    
-    ldi ZL, low(map<<1)
-    ldi ZH, high(map<<1)
-    ldi YL, low(main_map_start)
-    ldi YH, high(main_map_start)
-    mul r16, r16
-    mov r16, r0
-    
-store_map_loop:
-    LPM r17, Z+
-    st Y+, r17
-    dec r16
-    brne store_map_loop
-
-	; CRITICAL: Clear explored_map before route generation
-	; Without this, timer never worked and generte route always gave me the value of 1 instead of (6) on the hardware
-	; It worked fine on the simulator with debugger 
-    ldi YL, low(explored_map_start)
-    ldi YH, high(explored_map_start)
-    ldi r17, 49              ; 7�7 = 49
-    ldi r16, 0
-clear_explored:
-    st Y+, r16
-    dec r17
-    brne clear_explored
-
+	
+	call load_map
 ; -----------Added by Tom---------------
 	.include "lcd_display.inc"
 	reset_screen
@@ -115,11 +94,31 @@ clear_explored:
 
 ; -----------Added by Mo----------------
 	.include "keypad.inc"
-	reset_screen
 ; --------------------------------------
 
-    ; Generate observation route
-    call generate_route
+	; User to input location of accident scene (or *,* for no accident)
+	call get_crash_xy
+	reset_screen
+	; User to input visibility distance
+	call get_visibility_value
+	; Wait for PB0 button press to begin search path generation
+	cbi DDRD, 0
+	wait_for_pb0:
+		sbic PIND, 0
+		rjmp wait_for_pb0
+	; Generate observation route
+	ldi r16, 3
+	sts vis_val, r16
+	call generate_route
+	call display_route_points
+	; Wait for PB1 to start search
+	cbi DDRD, 1
+	wait_for_pb1:
+		sbic PIND, 1
+		rjmp wait_for_pb1
+	reset_screen
+
+    
     
     ; Initialize drone at first observation point
     call initialize_drone
