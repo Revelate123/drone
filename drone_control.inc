@@ -37,7 +37,7 @@ initialize_drone:
     sts drone_state, r16
     
     ; Set initial speed
-    ldi r16, 10               ; Can change speed here for testing 
+    ldi r16, 5               ; Can change speed here for testing 
     sts drone_speed, r16
 
 	; Set initial altitude - Debugging with low altitude for now
@@ -170,7 +170,10 @@ handle_observation_point_arrival:
     call show_led_progress
     
     ; Start hovering
-    ldi r16, 10         ; can change
+    ; CHANGED: From 10 to 50 (to maintain 5 second hover time)
+    ; 50 ticks × 0.1s = 5.0 seconds
+    ldi r16, 50                    ; Was: ldi r16, 10
+
     sts hovering_counter, r16
     
     ; TODO: Check if accident visible here
