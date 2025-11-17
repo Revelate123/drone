@@ -345,17 +345,22 @@ get_crash_xy_epilogue:
 get_visibility_value:
 ; using keypad for user input
 ; showing keypad presses into lcd and saves it to memory
-; will max at 99 if inputted more than 99
-; will max at 2 digit input
-msg_visibility_1: .db "Enter visibility",0
-msg_visibility_2: .db "(00 - 26):",0
+; will return after inputting 2 digits
+; will max at 26 for user input
+; if user inputs "3" as first digit, it will directly save it
+; if user inputs "2" and ("6" or "7" or "8" or "9") will automatically show and save "6"
+
+msg_visibility_1: .db "Input visibility",0
+msg_visibility_2: .db "(0-26):",0
 	input_msg_to_display msg_visibility_1, 0
     do_lcd_command 0b11000000
 	input_msg_to_display msg_visibility_2, 0
+
 get_vis_prologue:
 	push r16						; used for taking value of scan_keypad_simple
 	push r17						; saving the value to memory
 	push r18						; temp
+	rcall init_keypad_simple
 get_vis_loop:
 get_dig1:
 	rcall scan_keypad_simple
@@ -365,23 +370,49 @@ get_dig1:
 	brlo get_dig1					; should return and get other value
 	cpi r16, '9'+1
 	brsh get_dig1
-
+	cpi r16, '2'+1
+	brlo found_2_or_below
+	; if it is > 2, automatically cap and finalise
 	do_lcd_data_from_reg r16		; show value and save to memory
 	subi r16, '0'
 	mov r17, r16
-
 	rcall wait_key_release
-get_dig2_or_hash:
+	rjmp get_vis_epilogue
+
+found_2_or_below:
+	do_lcd_data_from_reg r16		; show value and save to memory
+	subi r16, '0'
+	mov r17, r16
+	rcall wait_key_release
+	cpi r16, 2
+	breq get_dig2_or_hash_after_2
+get_dig2_or_hash_after_1:
 	rcall scan_keypad_simple
 	cpi r16, 0xFF					; scanning for 0xFF which means no key is pressd
-	breq get_dig2_or_hash
+	breq get_dig2_or_hash_after_1
 	cpi r16, '#'					; found # then move on to saving the value
 	breq get_vis_epilogue
 	cpi r16, '0'					; scanning for inputs of '0'-'9' only
-	brlo get_dig2_or_hash			; should return and get other value
+	brlo get_dig2_or_hash_after_1	; should return and get other value
 	cpi r16, '9'+1
-	brsh get_dig2_or_hash
-
+	brsh get_dig2_or_hash_after_1
+	rjmp save_dig2
+get_dig2_or_hash_after_2:
+	rcall scan_keypad_simple
+	cpi r16, 0xFF					; scanning for 0xFF which means no key is pressd
+	breq get_dig2_or_hash_after_1
+	cpi r16, '#'					; found # then move on to saving the value
+	breq get_vis_epilogue
+	cpi r16, '0'					; scanning for inputs of '0'-'9' only
+	brlo get_dig2_or_hash_after_1	; should return and get other value
+	cpi r16, '9'+1
+	brsh get_dig2_or_hash_after_1
+	cpi r16, '6'
+	brsh save_as_26
+	rjmp save_dig2
+save_as_26:
+	ldi r16, '6'
+save_dig2:
 	do_lcd_data_from_reg r16		; show value and save to memory
 	subi r16, '0'					; mul 1st digit by 10 + 2nd digit
 	lsl r17
