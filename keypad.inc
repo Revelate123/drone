@@ -201,13 +201,43 @@ delay_inner:
 	pop r24
 	pop r23
 	pop r22
-	ret	
+	ret
+
+printing_initial_display_1:
+msg_location: .db "map(M*M); M=",0
+	input_msg_to_display msg_location, 0
+
+	push ZL
+	push ZH
+	push r16
+	push r17
+		ldi ZL, low(map_size<<1)
+		ldi ZH, high(map_size<<1)
+		lpm r16, Z
+		cpi r16, 10
+		brlo print_map_size_lower_than_10
+		subi r16, 10
+		mov r17, r16
+		do_lcd_data '1'
+		mov r16, r17
+	print_map_size_lower_than_10:
+		subi r16, -'0'
+		do_lcd_data_from_reg r16
+	pop r17
+	pop r16
+	pop ZH
+	pop ZL
+printing_initial_display_1_epilogue:
+	do_lcd_command 0b11000000
+	msg_location_1: .db "loc:",0
+	input_msg_to_display msg_location_1, 0
+	ret
 
 get_crash_xy:
 ; using keypad for user input
 ; showing keypad presses into lcd and saves it to memory
-msg_location: .db "loc:",0
-	input_msg_to_display msg_location, 0
+; saves it in r17 before putting it to memory
+	rcall printing_initial_display_1
 get_crash_xy_prologue:
 	push r16						; used for taking value of scan_keypad_simple
 	push r17						; saving the value to memory
@@ -219,6 +249,11 @@ get_x1:
 	rcall scan_keypad_simple
 	cpi r16, 0xFF					; scanning for 0xFF which means no key is pressd
 	breq get_x1
+	cpi r16, '*'					; scan for * meaning that no accident
+	brne continue_check_digits_for_crash
+	rjmp no_accident
+
+continue_check_digits_for_crash:
 	cpi r16, '0'					; scanning for inputs of '0'-'9' only
 	brlo get_x1						; should return and get other value
 	cpi r16, '9'+1
@@ -291,6 +326,14 @@ get_y2_or_hash:
 	add r17, r16
 
 	rcall wait_key_release
+	rjmp get_crash_xy_epilogue
+
+no_accident:
+	do_lcd_data '*'
+	do_lcd_data ','
+	do_lcd_data '*'
+	ldi r17, '*'
+	sts crash_x, r17
 
 get_crash_xy_epilogue:
 	sts crash_y, r17
@@ -351,6 +394,9 @@ get_dig2_or_hash:
 	rcall wait_key_release
 get_vis_epilogue:
 	sts vis_val, r17
+	pop r18
+	pop r17
+	pop r16
 	ret
 
 end_keypad_simple:
