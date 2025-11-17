@@ -274,12 +274,12 @@ calc_blocking_bounds_body:
 	ldi XH, high(main_map_size)
 	ld r2, X+ ; used to compare with map bounds
 cp x2, x1
-breq x2_eq_x1_jump
+breq x2_eq_x1_jump ; Jump to orthoganal cases
 brlt x2_lower_jmp
 	cp y2, y1
-	breq y1_eq_y2_jump
+	breq y1_eq_y2_jump ; Jump to orthoganal cases
 	brlt y2_lower_1
-		;top right quadrant
+;-------top right quadrant-----------------------------
 		compute_bound -1, 1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
@@ -290,6 +290,7 @@ brlt x2_lower_jmp
 		mov r9, r0 ; set final step to be n*n-1
 		dec r9
 		rjmp cbbb_end
+;-------jump platforms----------------------------------
 x2_lower_jmp:
 rjmp x2_lower
 x2_eq_x1_jump:
@@ -297,7 +298,7 @@ jmp x2_eq_x1
 y1_eq_y2_jump:
 jmp y1_eq_y2
 	y2_lower_1:
-		;bottom right quadrant
+;-------bottom right quadrant-------------------------
 		compute_bound -1, -1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
@@ -311,9 +312,9 @@ jmp y1_eq_y2
 	
 x2_lower:
 	cp y2, y1
-	breq y1_eq_y2_jump2
+	breq y1_eq_y2_jump2 ; Jump to orthoganal cases
 	brlt y2_lower_2
-		; top left quadrant
+;-------top left quadrant------------------------------
 		compute_bound 1, 1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
@@ -327,7 +328,7 @@ x2_lower:
 y1_eq_y2_jump2:
 jmp y1_eq_y2
 	y2_lower_2:
-		; bottom left quadrant
+;-------bottom left quadrant---------------------------
 		compute_bound 1, -1
 		mov upper_bound_X, lower_bound_X
 		mov upper_bound_Y, lower_bound_Y
@@ -337,84 +338,61 @@ jmp y1_eq_y2
 		clr r9
 		rjmp cbbb_end
 
-;------straight lines section----------
+;-------Orthoganal directions-------------------------
+;-------Vertical--------------------------------------
 	x2_eq_x1:
 		clr upper_bound_X
 		clr upper_bound_Y
 		clr lower_bound_X
 		clr lower_bound_Y
-		; Straight line vertically
 		clr x_step
 		cp y1, y2
 		brlt up
+down:
 		ldi y_step, -1
 		clr r9
 		add r9, x1
 		lsr r9
 		rjmp cbbb_end
 up:
-	ldi y_step, 1
-	;-----
-	mul r2, r2
-	sub r0, r2
-	mov r9, x1
-	lsr r9
-	add r0, r9
-	mov r9, r0
-	rjmp cbbb_end
-
+		ldi y_step, 1
+		mul r2, r2
+		sub r0, r2
+		mov r9, x1
+		lsr r9
+		add r0, r9
+		mov r9, r0
+		rjmp cbbb_end
+;-------Horizontal-------------------------------------
 y1_eq_y2:
 		clr upper_bound_X
 		clr upper_bound_Y
 		clr lower_bound_X
 		clr lower_bound_Y
-	clr y_step
-	cp x1, x2
-	brlt right
-	ldi x_step, -1
-	lsr y2
-	mul y2, r2
-	lsl y2
-	mov r9, r0
-	rjmp cbbb_end
+		clr y_step
+		cp x1, x2
+		brlt right
+left:
+		ldi x_step, -1
+		lsr y2
+		mul y2, r2
+		lsl y2
+		mov r9, r0
+		rjmp cbbb_end
 right:
-	ldi x_step, 1
-	mov r9, r2
-	lsr y2
-	mul y2, r2
-	lsl y2
-	add r9, r0
-	dec r9
-	rjmp cbbb_end
-	; For horizontals just check in a straight line, calling the slope and compare directly
-	; For verticals just set the upper bound to be 0?
-	; elif x1 == x2 and y1 < y2:
-	; 	on a straight line up
-; 
-	; elif x1 == x2 and y1 < y2:
-	; 	on a straight line down
-; 
-	; elif x1 < x2 and y1 == y2:
-	; 	on a straight line right
-; 
-	; elif x1 < x2 and y1 == y2:
-	; 	on a straight line left
+		ldi x_step, 1
+		mov r9, r2
+		lsr y2
+		mul y2, r2
+		lsl y2
+		add r9, r0
+		dec r9
+		rjmp cbbb_end
 
 cbbb_end:
-	;lsr upper_bound_X
-	;lsr upper_bound_Y
-	;lsr lower_bound_X
-	;lsr lower_bound_Y
 	mov r8, x_step
 	mov r13, y_step
-	; Now have two bounds, the current location, blocking start location, x_step, edge_of_map
-	; call the next blocking function
-	lsr x1
-	lsr y1
-	lsr z1
-	lsr x2
-	lsr y2
-	lsr z2
+	; Now have two bounds, the current location, blocking start location, x_step, edge_of_map, y_step
 
 calc_blocking_bounds_epilogue:
 pop r26
@@ -437,64 +415,66 @@ ret
 ; r30 = ZL
 ; r27 = XH
 ; r26 = XL
+; r22 = y2
+; r21 = x2
+; r17 = temp
+; r13 = y_step
 ; r9 = edge_of_map
 ; r8 = x_step
-; r13 = y_step
+; r2 = current linear position in map
 .def y_step = r13
 .def  x_step = r8
 .def  edge_of_map = r9
-; r2 = current linear position in map
 next_el:
 next_el_prologue:
-push r8
-push r9
-push r13
-push r16
-push r17
-push r18
-push YH
-push YL
+	push r8
+	push r9
+	push r13
+	push r16
+	push r17
+	push r18
+	push YH
+	push YL
 next_el_body:
-; Get the map size
-ldi YL, low(main_map_size)
-ldi YH, high(main_map_size)
-ld r17, Y
-mul y2, r17
-add r0, x2
-cp r0, edge_of_map
-breq ne_fin_loop
-clr r16
-;----Check x_step == 0 ---------
-cp x_step, r16
-breq add_columns
-;---------add x_step-------
-cp x_step, r16
-brge cont
-dec r16
+	ldi YL, low(main_map_size)
+	ldi YH, high(main_map_size)
+	ld r17, Y ; Get map size
+	mul y2, r17 
+	add r0, x2
+	cp r0, edge_of_map ; Check if last position in map has been reached.
+	breq ne_fin_loop
+	clr r16
+;---------Check for special case x_step == 0---------
+	cp x_step, r16
+	breq add_columns
+;---------add x_step-----------------
+	cp x_step, r16
+	brge cont
+	dec r16
 cont:
-add ZL, x_step
-adc ZH, r16
-add XL, x_step
-adc XH, r16
-add r2, x_step
-add x2, x_step
-;-------------------
+	add ZL, x_step
+	adc ZH, r16
+	add XL, x_step
+	adc XH, r16
+	add r2, x_step
+	add x2, x_step
 ; compare x2 to the row width, if greater then add x_step*row_width
-cp x2, r17
-brlo ne_cont_loop
-mul x_step, r17
-add x2, r0 ; reset back to row start/end
-;----add columns------
+; works for both increment and decrement via overflow.
+	cp x2, r17
+	brlo ne_cont_loop ; If not beyond a row start/end then y_step does not need adding.
+	mul x_step, r17
+	add x2, r0 ; reset back to row start/end. Adds either -size or +size
+;--------add y_step------------------
 add_columns:
-mov r18, y_step
-muls r18, r17
-add ZL, r0
-adc ZH, r1
-add XL, r0
-adc XH, r1
-add r2, r0
-rjmp ne_cont_loop
-;---------------------- 
+	mov r18, y_step
+	muls r18, r17
+	add ZL, r0
+	adc ZH, r1
+	add XL, r0
+	adc XH, r1
+	add r2, r0
+	rjmp ne_cont_loop
+	;---------------------- 
 ne_fin_loop:
 	clr r24
 	rjmp next_el_epilogue
@@ -503,47 +483,32 @@ ne_cont_loop:
 	ldi r24, 1
 
 next_el_epilogue:
-pop YL
-pop YH
-pop r18
-pop r17
-pop r16
-pop r13
-pop r9
-pop r8
-ret
+	pop YL
+	pop YH
+	pop r18
+	pop r17
+	pop r16
+	pop r13
+	pop r9
+	pop r8
+	ret
 
-
-
-; r31 = ZH
-; r30 = ZL
-; r29 = YH
-; r28 = YL
-; r27 = XH
-; r26 = XL
-
-; r23 = z_block (input)
-; r22 = y_block (input)
-; r21 = x_block (input)
-; r20 = z_drone (input)
-; r19 = y_drone (input)
-; r18 = x_drone (input)
-; r17 = lower_bound_Y (input)
-; r16 = lower_bound_X (input)
-; r15 = upper_bound_Y (input)
-; r14 = upper_bound_X (input) 
-; r13 =
-; r12 = temporary
-; r11 = slope to block
-; r10 = slope to block
-; r9 = edge_of_map (input)
-; r8 = x_step (input)
-; r7 = temporary ** slope outputs here
-; r6 = address_offset ** slope outputs here
-; r5 = blocking check output
-; r4 = lower_bound_Y **
-; r3 = lower_bound_X **
-; r2 = current linear position in map
+; This function computes whether individual cells are blocked based on the drone location
+; and the current location causing blocking.
+; Inputs:
+; r23 = z_block
+; r22 = y_block 
+; r21 = x_block
+; r20 = z_drone
+; r19 = y_drone
+; r18 = x_drone 
+; r17 = lower_bound_Y 
+; r16 = lower_bound_X 
+; r15 = upper_bound_Y 
+; r14 = upper_bound_X 
+; r13 = y_step
+; r9 = edge_of_map
+; r8 = x_step
 .equ block_slope_Z = 1
 .equ block_slope_XY = 2
 scan_from_blocking_point:
@@ -590,20 +555,14 @@ init_scan_blocking:
 	ld r2, X+ ; used to compare with map bounds
 	
 	clr r7
-	add XL, r6
-	adc XH, r7
+	add XL, r6 ; move X to the current blocking cell.
+	adc XH, r7 
 	ldi ZL, low(visibility_map_start)
 	ldi ZH, high(visibility_map_start)
-	add ZL, r6
+	add ZL, r6 ; move Z to the current blocking cell.
 	adc ZH, r7
-
-; This block of code sets the bounds as either 0 or 1
-	clr r7
-	inc r7
 	
 set_complete:
-	clr r2
-	add r2, r6
 	mov r3, lower_bound_X
 	mov r4, lower_bound_Y
 	mov r12, r23
@@ -616,14 +575,14 @@ sfbpb_loop:
 	mov YH, XH
 	mov YL, XL
 	call get_coords ;stores x2,y2 values based on Y
-	/*ld r16, Z 
-	cpi r16, 0
-	breq out_of_bounds*/
+	ld r16, Z 
+	cpi r16, 0 ; Check if cell is already not visible.
+	breq out_of_bounds
 	rcall check_bounds
 	mov r16, r5
 	cpi r16, 0
 	breq out_of_bounds
-	ld z2, X		; stores z2
+	ld z2, X	
 	call slope ; stores results in r6 and r7
 	call blocked
 out_of_bounds:
@@ -798,25 +757,8 @@ bb_higher:
 		;if z_cur < z_drone:
 			;it is definitely blocked.
 bb_next:
-		;compare_slopes r7, r6, r11, r10
-		;--------------
-		push r16
-push r17
-mul r7, r10
-mov r7, r0
-mov r16, r1
-mul r11, r6
-mov r11, r0
-mov r17, r1
-cp  r7, r11
-cpc r16, r17
-brsh cs_end
-ldi r21, 0
-st Z, r21
-cs_end:
-	pop r17
-	pop r16
-		;--------------
+		compare_slopes r7, r6, r11, r10
+
 blocked_epilogue:
 pop ZL
 pop ZH
@@ -829,8 +771,6 @@ pop r12
 pop r10
 pop r11
 ret
-
-
 
 
 ; Calculates the slope between two points
@@ -863,12 +803,5 @@ slope_epilogue:
 	pop y1
 	pop x1
 	ret
-
-
-;
-straight_line_blocking_scan:
-straight_line_blocking_scan_prologue:
-straight_line_blocking_scan_body:
-straight_line_blocking_scan_epilogue:
 
 end_visibility:
