@@ -18,13 +18,19 @@ init_simulation_timer_body:
     ldi r16, 0b00000000
     sts TCCR1A, r16               ; WGM11:10 = 00
     
-    ldi r16, 0b00001101           ; WGM13:12 = 01, CS12:10 = 101 (prescaler 1024)
+    ; CHANGED: Prescaler from 1024 to 256
+	; 16,000,000/ 256 = 62500Hz
+	; 1/62500 = 16microSec
+	; OCR1A = 6249
+	; Actual Time = (6249 + 1) * 256/ 16000000 = 0.1 second which is better with the 0.1 second 
+    ldi r16, 0b00001100           ; CS12:10 = 100 = Prescaler 256
     sts TCCR1B, r16
     
-    ; OCR1A = (0.5 * 16,000,000) / 1024 - 1 = 7812 = 0x1E84
-    ldi r16, high(7812)
+    ; CHANGED: OCR1A from 7812 to 6249
+    ; OCR1A = (0.1 * 16,000,000) / 256 - 1 = 6249 = 0x1869
+    ldi r16, high(6249)
     sts OCR1AH, r16
-    ldi r16, low(7812)
+    ldi r16, low(6249)
     sts OCR1AL, r16
     
     ; Enable Timer1 Compare Match A interrupt
@@ -44,7 +50,7 @@ init_simulation_timer_epilogue:
 
 
 ; TIMER1_COMPA ISR
-; Triggered every 0.5 seconds (2 Hz)
+; Triggered every 0.1 seconds (10 Hz)
 TIMER1_COMPA:
 TIMER1_COMPA_prologue:
     push r16

@@ -97,6 +97,7 @@ main:
 	call load_map
 ; -----------Added by Tom---------------
 	.include "lcd_display.inc"
+	.include "route_display_tom.inc"
 	reset_screen
 ; --------------------------------------
 
@@ -118,14 +119,32 @@ main:
 	ldi r16, 3
 	sts vis_val, r16
 	call generate_route
-	call display_route_points
+	reset_screen
+	call display_route_points_tom
 	; Wait for PB1 to start search
+	
 	cbi DDRD, 1
 	wait_for_pb1:
-		sbic PIND, 1
+		call update_display_route ; Important, do not touch registers r17 and r19
+		ldi r20, 0xff
+		ldi r21, 0xff
+		ldi r22, 0x0f
+		clr r23
+	wait_for_pb1_loop:
+		sbis PIND, 1
+		rjmp done_waiting_for_pb1
+		subi r20, 1
+		sbci r21, 0
+		sbci r22, 0
+		cp r20, r23
+		cpc r21, r23
+		cpc r22, r23
+		brne wait_for_pb1_loop
 		rjmp wait_for_pb1
+		
+done_waiting_for_pb1:
 	
-	; reset_screen ; Moses commented this so that the scrolling will work
+	reset_screen ; Moses commented this so that the scrolling will work
 
 	; rcall update_route 
 	; ^^^^^ this is to be called, when drone arrived to the next search point
@@ -329,7 +348,6 @@ route_crashed:
 ; ============================================================================
 ; FLASH DATA - 7x7 Map
 ; ============================================================================
-.org 0x4000
 map_size: .db 7
 map: 
     .db 0,0,0,0,0,0,0 ,     0,2,2,2,2,2,0,     0,2,4,4,4,2,0,     0,2,4,6,4,2,0,     0,2,4,4,4,2,0,     0,2,2,2,2,2,0,     0,0,0,0,0,0,0
