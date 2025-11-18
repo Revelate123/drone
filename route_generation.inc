@@ -139,7 +139,7 @@ generate_route_body:
 
 		handle_crash:
 			ldi YL, low(accident_x)
-			ldi YH, low(accident_x)
+			ldi YH, high(accident_x)
 
 			st Y+, r21
 			st Y, r22
