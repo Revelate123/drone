@@ -137,9 +137,13 @@ skip_back_to_home:
 	;rcall sleep_500ms
 	ret
 
+; ===========================================================
+; displaying route and updating route for search
+; ============================================================
+
 display_route_points:
-; prints route to lcd
 ; save printed values in ascii to dseg: route_printed
+; prints the first 16 chars of path_printed
 display_route_prologue:
 	reset_screen
 	push XL
@@ -157,11 +161,9 @@ display_route_prologue:
 	ldi XH, high(route_size)
 	ldi YL, low(route_printed)
 	ldi YH, high(route_printed)
-
-	sts cur_RtDisp_addr, YL			; saving address of route_printed to cur_RtDisp_addr
-	sts cur_RtDisp_addr+1, YH		; this is for the scrolling effect
-
 	; we want to read the next route_size * 3
+	sts cur_RtDisp_addr, YL
+	sts cur_RtDisp_addr+1, YH
 	ldi r16, 3	; 3: this is for x, y, z
 	ld r17, X+
 	mul r17, r16
@@ -180,14 +182,12 @@ display_route_loop:
 	cpi r18, 10
 	brlo lower_than_10
 	ldi r21, '1'				; fill temp with value '1'
-	do_lcd_data_from_reg r21	; print 10s, printing '1'
 	st Y+, r21					; store to Y/route-printed for printed value
 	subi r18, 10				; -10 for the next digit to show up
 	inc r19						; inc counter for char display
 
 lower_than_10:
 	subi r18, -'0'				; digit to ascii
-	do_lcd_data_from_reg r18	; print 1s, printing from r18
 	st Y+, r18					; store to Y/route-printed for printed value
 	inc r19						; inc counter for char display
 
@@ -195,7 +195,6 @@ lower_than_10:
 	brsh found_xyz
 
 	ldi r21, ','
-	do_lcd_data_from_reg r21	; still haven't completed (x,y,z)
 	st Y+, r21					; store to Y/route-printed for printed value
 	inc r19						; inc counter for char display
 	inc r20						; inc counter for stage; find x->y->z
@@ -203,24 +202,26 @@ lower_than_10:
 	
 found_xyz:						; found (x,y,z) complete pair
 	ldi r21, '/'
-	do_lcd_data_from_reg r21	; print slash for delimiter
 	st Y+, r21					; store to Y/route-printed for printed value
 	inc r19						; inc counter for char display
 	clr r20						; clear stage
 	cpi r17, 0					; compare with 0, end of route?
 	brne display_route_loop		; find next value set
-	rcall sleep_500ms
+	ldi r21, 0
+	st Y+, r21					; store 0 to mark end of route?
 
-lcd_overflow_check_:
-	cpi r19, 17					; compare length of data to max display 0-16 chars
-	brlo display_route_epilogue
-	lcd_shift_left
-	rcall sleep_500ms
-	dec r19
-	rjmp lcd_overflow_check_
+
+print_route_first_16:
+	ldi YL, low(route_printed)
+	ldi YH, high(route_printed)
+	ldi r21, 16
+print_route_loop:
+	ld r18, Y+					; load char pointed in Y to r18
+	do_lcd_data_from_reg r18
+	dec r21
+	cpi r21, 0
+	brne print_route_loop
 display_route_epilogue:
-	rcall sleep_500ms
-	lcd_back_to_home
 	pop YH
 	pop YL
 	pop r21
@@ -233,9 +234,65 @@ display_route_epilogue:
 	pop XL
 	ret
 
+update_route:
+	; display next point in route by scrolling from current point -> next
+			; reset_screen
+			; print from current_point + 25 chars (16+9)
+			; scrolls to the next '/'
+	; call this function to traverse to next point in display
+	; TODO: should set cur_RtDisp_addr => route_printed before this
+update_route_prologue:
+	reset_screen
+	push XL
+	push XH
+	push r17	
+	push r16
+	lds XL, cur_RtDisp_addr
+	lds XH, cur_RtDisp_addr+1
+	ldi r17, 25							; counter 25 chars
+prints_route_25_chars_after_address:
+	ld r16, X+						; load char pointed in X to r16
+	do_lcd_data_from_reg r16
+	dec r17
+	cpi r16, 0						; finds eof (end of route) move to current address and start scrolling
+	breq scroll_route_init
+	cpi r17, 0						
+	brne prints_route_25_chars_after_address
+
+scroll_route_init:
+	lds XL, cur_RtDisp_addr
+	lds XH, cur_RtDisp_addr+1
+update_route_loop:
+	ld r16, X+
+	cpi r16, '/'
+	breq found_slash
+	lcd_shift_left
+	rcall sleep_100ms
+	rjmp update_route_loop
+found_slash:
+	lcd_shift_left
+	rcall sleep_100ms
+	sts cur_RtDisp_addr, XL
+	sts cur_RtDisp_addr+1, XH
+	call update_speed
+	call update_height
+	call update_status
+update_route_epilogue:
+	pop r16
+	pop r17
+	pop XH
+	pop XL
+	ret
+
+
+; ===========================================================
+; displaying path and updating path in between two points
+; ============================================================
+
 display_path_between_two_points:
 ; prints path to lcd
 ; save printed path values in ascii to dseg: path_printed
+; will not scroll in the first initialisation of display
 display_path_2_prologue:
 	reset_screen
 	push XL
@@ -360,36 +417,6 @@ display_path_2_epilogue:		; BRANCH
 	pop r16
 	pop YH
 	pop YL
-	pop XH
-	pop XL
-	ret
-
-update_route:
-	; display next point in route by scrolling
-	; call this function to traverse to next point in display
-update_route_prologue:
-	push XL
-	push XH
-	push r16	
-	push r17
-	lds XL, cur_RtDisp_addr
-	lds XH, cur_RtDisp_addr+1
-update_route_loop:
-	ld r16, X+
-	cpi r16, '/'
-	breq found_slash
-	lcd_shift_left
-	rcall sleep_500ms
-	rjmp update_route_loop
-found_slash:
-	lcd_shift_left
-	rcall sleep_500ms
-	sts cur_RtDisp_addr, XL
-	sts cur_RtDisp_addr+1, XH
-update_route_epilogue:
-	rcall sleep_500ms
-	pop r16
-	pop r17
 	pop XH
 	pop XL
 	ret
@@ -581,6 +608,17 @@ sleep_50ms:
 	rcall sleep_5ms
 	rcall sleep_5ms
 	rcall sleep_5ms
+	ret
+
+sleep_100ms:
+	rcall sleep_50ms
+	rcall sleep_50ms
+	ret
+
+sleep_60ms:
+	rcall sleep_5ms
+	rcall sleep_5ms
+	rcall sleep_50ms
 	ret
 
 sleep_200ms:
