@@ -285,19 +285,21 @@ push r20
 push r21
 update_display_route_body2:
 reset_screen
-	ldi YL, low(route_between_points)
-	ldi YH, high(route_between_points)
-
+	ldi YL, low(route_between_points) ; Loads from the start, which is an error
+	ldi YH, high(route_between_points) ; Probably should load the current position in memory and then step through by cur_chars. AFter that save the new pos.
+; ---------This block is for advancing to the next point in the path----
 adiw Y ,1
 lds counter, chars_in_cur_pos
 advance_disp:
 	adiw Y, 1
 	dec counter
 	brne advance_disp
+; ----------------------------------------------------------------------
+; Probably save the YL and YH in memory now.
 ld counter, Y+
 sts chars_in_cur_pos, counter
 
-ldi r25, 16
+ldi r25, 16 ; Also need to consider if we are at the end of the route, then we should probably just print nothing/exit
 clr pointer
 clr r21
 drpt3_loop:
@@ -309,7 +311,7 @@ drpt3_loop:
 	breq skip_next2
 	rjmp continue4
 skip_next2:
-	ld counter, Y+
+	ld counter, Y+ ; Maybe if counter is a value e.g. 0xff we break. THis would require adding one extra store at the end of store_display_route2
 continue4:
 	dec r25
 	brne drpt3_loop
