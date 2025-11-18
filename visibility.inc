@@ -183,6 +183,7 @@ cvb_loop:
 	rcall scan_from_blocking_point
 	dec r26				
 	brne cvb_loop
+	call check_for_accident
 check_visible_epilogue:
 	pop r26
 	pop r23
@@ -198,6 +199,47 @@ check_visible_epilogue:
 	pop YH
 	pop YL
 	ret
+
+check_for_accident:
+check_for_accident_prologue:
+push r16
+push r17
+push r18
+push x2
+push y2
+push YL
+push YH
+check_for_accident_body:
+	ldi YL, low(visibility_map_size)
+	ldi YH, high(visibility_map_size)
+	ld r16, Y+
+	mul r16, r16
+	mov r16, r0
+	lds r17, crash_x
+	lds r18, crash_y
+cfa_loop:
+	call get_coords
+	adiw Y, 1
+	cp r17, x2
+	brne not_found
+	cp r18, y2
+	breq cfa_found
+not_found:
+	dec r16
+	brne cfa_loop
+	rjmp check_for_accident_epilogue
+cfa_found:
+	ldi r16, 1
+	sts found_crash_site, r16
+check_for_accident_epilogue:
+pop YH
+pop YL
+pop y2
+pop x2
+pop r18
+pop r17
+pop r16
+ret
 
 ; Computes the bounds and stores results in registers lower_bound_X and lower_bound_Y
 ; Takes signed integer inputs, @0 and @1 which are added to x2 and y2 prior. 
