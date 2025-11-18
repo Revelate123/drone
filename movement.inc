@@ -65,6 +65,7 @@ update_drone_position_body:
     rjmp update_drone_position_epilogue
     
 update_pos_arrived:
+call update_display_route1
     ldi r16, 0
     sts movement_accumulator, r16
     ldi r16, 1

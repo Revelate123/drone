@@ -8,68 +8,6 @@
 
 rjmp end_route_display_tom
 
-.equ button1 = 1;
-.equ button2 = 0;
-.equ loop_count = 0xFFFF
-.equ inner_loop_count = 0x0A
-
-.def state = r20
-.def inner = r23
-.def iH = r25
-.def iL = r24
-.def countH = r17
-.def countL = r16
-
-; This is the lecture code modified with an inner loop and nop replaced by
-; check_button_pressed
-.macro timed_poll
-	ldi countL, low(loop_count)
-	ldi countH, high(loop_count)
-	clr iH
-	clr iL
-loop: cp iL, countL
-	cpc iH, countH
-	brsh done
-	adiw iH:iL, 1
-	ldi inner, inner_loop_count
-	loop_inner:
-		dec inner
-		check_button_pressed
-		brne loop_inner
-	rjmp loop
-done:
-.endmacro
-
-; This is the lecture code modified with an inner loop
-.macro wait_for_bounce
-	ldi countL, low(loop_count)
-	ldi countH, high(loop_count)
-	clr iH
-	clr iL
-loop: cp iL, countL
-	cpc iH, countH
-	brsh done
-	adiw iH:iL, 1
-	ldi inner, inner_loop_count
-	loop_inner:
-		dec inner
-		nop
-		brne loop_inner
-	rjmp loop
-done:
-.endmacro
-
-
-.macro check_button_pressed
-	sbic PIND, button2		; skip next instruction if button pressed
-	rjmp exit
-button_pressed:	
-	wait_for_bounce			; prevents accidental multiple presses due to bouncing
-	jmp done_waiting_for_pb1
-exit:
-.endmacro
-
-
 .def char_count = r17
 .def cur_x = r20
 .def cur_y = r21
@@ -118,6 +56,84 @@ store_display_route_body:
 
 
 store_display_route_epilogue:
+pop r22
+pop r21
+pop r20
+pop r19
+pop r18
+pop r16
+pop XH
+pop XL
+ret
+
+store_display_route2:
+store_display_route2_prologue:
+push XL
+push XH
+push r16
+push r18
+push r19
+push r20
+push r21
+push r22
+store_display_route2_body:
+
+	ldi XL, low(cur_route_size)
+	ldi XH, high(cur_route_size)
+	ldi YL, low(route_between_points)
+	ldi YH, high(route_between_points)
+
+	
+	ld r24, X+
+	sdr2_loop:
+		ldi char_count, 3
+		ld cur_x, X+
+		inc char_count
+		cpi cur_x, 10
+		brsh two_digit_x
+		rjmp check_y_digits
+two_digit_x:
+		inc char_count
+check_y_digits:
+		ld cur_y, X+
+		inc char_count
+		cpi cur_y, 10
+		brsh two_digit_y
+		rjmp check_z_digits
+two_digit_y:
+		inc char_count
+check_z_digits:
+		call get_value_at_coords ; loads to cur_z
+		inc char_count
+		cpi cur_z, 10
+		brsh two_digit_z
+		rjmp store_digits
+two_digit_z:
+		inc char_count
+store_digits:
+		; First store number of chars 
+		st Y+, char_count
+		mov r16, cur_x
+		rcall number_to_ascii
+		ldi r16, ','
+		st Y+, r16
+		inc char_count
+		mov r16, cur_y
+		rcall number_to_ascii
+		ldi r16, ','
+		st Y+, r16
+		inc char_count
+		mov r16, cur_z
+		rcall number_to_ascii 
+		ldi r16, '/'
+		st Y+, r16
+		inc char_count
+
+		dec r24
+		brne sdr2_loop
+
+
+store_display_route2_epilogue:
 pop r22
 pop r21
 pop r20
@@ -207,6 +223,113 @@ update_display_route_epilogue:
 
 
 
+
+
+
+
+
+
+
+
+
+display_route_points_tom2:
+display_route_points2_prologue:
+push r16
+push r18
+push r20
+push r21
+display_route_points2_body:
+call store_display_route2 ; stores char_count in r17
+// We want to fill 16 chars of the lcd and then push and pop from the ends
+reset_screen
+	ldi YL, low(route_between_points)
+	ldi YH, high(route_between_points)
+
+ld counter, Y+
+sts chars_in_cur_pos, counter
+
+ldi r25, 16
+clr pointer
+clr r21
+drpt2_loop:
+	
+	ld pointer, Y+
+	
+	do_lcd_data_from_reg pointer
+	dec counter
+	breq skip_next
+	rjmp continue3
+skip_next:
+	ld counter, Y+
+continue3:
+	dec r25
+	brne drpt2_loop
+
+display_route_points2_epilogue:
+	pop r21
+	pop r20
+	pop r18
+	pop r16
+	ret
+
+
+
+
+
+
+update_display_route1:
+update_display_route_prologue1:
+push r16
+push r18
+push r20
+push r21
+update_display_route_body2:
+reset_screen
+	ldi YL, low(route_between_points)
+	ldi YH, high(route_between_points)
+
+adiw Y ,1
+lds counter, chars_in_cur_pos
+advance_disp:
+	adiw Y, 1
+	dec counter
+	brne advance_disp
+ld counter, Y+
+sts chars_in_cur_pos, counter
+
+ldi r25, 16
+clr pointer
+clr r21
+drpt3_loop:
+	
+	ld pointer, Y+
+	
+	do_lcd_data_from_reg pointer
+	dec counter
+	breq skip_next2
+	rjmp continue4
+skip_next2:
+	ld counter, Y+
+continue4:
+	dec r25
+	brne drpt3_loop
+update_display_route_epilogue2:
+	pop r21
+	pop r20
+	pop r18
+	pop r16
+	ret
+
+
+
+
+
+
+
+
+
+
+
 .def input_value=R16
 .def sign=R17					
 .def hundreds=R18				
@@ -261,6 +384,9 @@ pop r16
 ret
 
 .dseg
-cur_route_display: .byte 15*9
+cur_route_display: .byte 225*9
+
+chars_in_cur_pos: .byte 1
+route_between_points: .byte 15*9
 .cseg
 end_route_display_tom:

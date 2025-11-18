@@ -144,8 +144,8 @@ main:
 		
 done_waiting_for_pb1:
 	
-	reset_screen ; Moses commented this so that the scrolling will work
-
+	;reset_screen ; Moses commented this so that the scrolling will work
+	
 	; rcall update_route 
 	; ^^^^^ this is to be called, when drone arrived to the next search point
 	; ^^^^^ this will update the route display by scrolling, ie
@@ -174,6 +174,7 @@ done_waiting_for_pb1:
 ; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
 ; ============================================================================
 main_loop:
+call display_route_points_tom2
     ; ========================================
     ; KEYPAD POLLING LOOP (while waiting for tick)
     ; ========================================

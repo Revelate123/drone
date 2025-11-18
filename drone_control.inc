@@ -138,7 +138,7 @@ gpno_route_finished:
 advance_waypoint:
     push r16
     push r17
-    
+    ;
     ; Increment waypoint index
     lds r16, current_waypoint_index
     inc r16
@@ -181,7 +181,7 @@ handle_observation_point_arrival:
     
     ; After hovering, generate path to next observation point
     call generate_path_to_next_observation
-    
+    call display_route_points_tom2
     pop r16
     ret
 
