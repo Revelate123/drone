@@ -115,9 +115,9 @@ print_loop:
 	inc r17						; increase counter
 	rjmp print_loop
 print_done:
-	rcall sleep_500ms
-	rcall sleep_500ms
-	rcall sleep_500ms
+	;rcall sleep_500ms
+	;rcall sleep_500ms
+	;rcall sleep_500ms
 	; if r17 counter is more than 16 (visible LCD) -> scroll
 	mov r18, r17
 	cpi r18, 17
@@ -134,7 +134,7 @@ fin_scrolling:
 	breq skip_back_to_home
 	lcd_back_to_home
 skip_back_to_home:
-	rcall sleep_500ms
+	;rcall sleep_500ms
 	ret
 
 display_route_points:
