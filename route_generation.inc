@@ -125,30 +125,21 @@ generate_route_body:
 		call setup_and_check_visibility
 
 		; Deal with if crash site is found
-		push XL
-		push XH
-		push YL
-		push YH
-
-		ldi XL, low(found_crash_site)
-		ldi XH, high(found_crash_site)
-
-		ld temp, X
+		lds temp, found_crash_site
 		cpi temp, 1
 		brne no_crash
 
 		handle_crash:
-			ldi YL, low(accident_x)
-			ldi YH, high(accident_x)
+			lds temp, accident_x
+			cpi temp, -1
+			brne no_crash
 
-			st Y+, r21
-			st Y, r22
+			; Update accident location
+			sts accident_x, r21
+			sts accident_y, r22
 			
 		no_crash:
-		pop YH
-		pop YL
-		pop XH
-		pop XL
+	
 
 		; 3. Update explored map
 		call update_explored_map
