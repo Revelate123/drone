@@ -37,17 +37,20 @@ update_drone_position_body:
     rcall check_at_target_xy
     tst r16
     brne update_pos_arrived
-    
+
     ; Speed control with accumulator
     lds r16, drone_speed
     lds r17, movement_accumulator
     add r17, r16
     sts movement_accumulator, r17
     
-    cpi r17, 20
+    ; CHANGED: Threshold from 20 to 100
+	; 10dm/0.1 sec = 100
+    cpi r17, 100                   ; Was: cpi r17, 20
     brlo update_pos_no_movement
     
-    subi r17, 20
+    ; CHANGED: Subtract threshold from 20 to 100
+    subi r17, 100                  ; Was: subi r17, 20
     sts movement_accumulator, r17
     
     ; Move one step toward current waypoint
