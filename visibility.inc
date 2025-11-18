@@ -183,7 +183,7 @@ cvb_loop:
 	rcall scan_from_blocking_point
 	dec r26				
 	brne cvb_loop
-	call check_for_accident
+	;call check_for_accident
 check_visible_epilogue:
 	pop r26
 	pop r23
