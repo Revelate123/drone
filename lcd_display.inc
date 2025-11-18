@@ -556,7 +556,7 @@ update_found_site:
 	do_lcd_data ','
 	ld r21, X+
 	do_lcd_data_from_reg r21
-	get_value_at_coords
+	call get_value_at_coords
 	do_lcd_data ','
 	do_lcd_data_from_reg r22
 	do_lcd_data '/'
