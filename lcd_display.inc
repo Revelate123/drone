@@ -115,26 +115,12 @@ print_loop:
 	do_lcd_data_from_reg r18
 	inc r17						; increase counter
 	rjmp print_loop
-
 print_done:
-/*	; if r17 counter is more than 16 (visible LCD) -> scroll
-	mov r18, r17
-	cpi r18, 17
-	brlo fin_scrolling
-lcd_overflow_check:
-	cpi r18, 17
-	brlo fin_scrolling
-	lcd_shift_left
-	rcall sleep_500ms
-	dec r18
-	rjmp lcd_overflow_check
-*/
 fin_scrolling:
 	tst r20
 	breq skip_back_to_home
 	lcd_back_to_home
 skip_back_to_home:
-	;rcall sleep_500ms
 	ret
 
 ; ===========================================================
