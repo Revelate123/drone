@@ -116,7 +116,7 @@ generate_route_body:
 		
 		inc route_size_reg 
 		
-		; Set memory location to 1 in visibility map - this may be redundant
+		; Set memory location to 1 in visibility map
 		ldi temp, 1
 		st Y, temp
 
@@ -124,9 +124,34 @@ generate_route_body:
 		; r21, r22 already have x, y from get_coords
 		call setup_and_check_visibility
 
+		; Deal with if crash site is found
+		push XL
+		push XH
+		push YL
+		push YH
+
+		ldi XL, low(found_crash_site)
+		ldi XH, high(found_crash_site)
+
+		ld temp, X
+		cpi temp, 1
+		brne no_crash
+
+		handle_crash:
+			ldi YL, low(accident_x)
+			ldi YH, low(accident_x)
+
+			st Y+, r21
+			st Y, r22
+			
+		no_crash:
+		pop YH
+		pop YL
+		pop XH
+		pop XL
+
 		; 3. Update explored map
 		call update_explored_map
-		; TODO: Deal with if crash site is found - we can stop the route generation here
 
 		; 4. Check if explored map is fully explored
 		call check_fully_explored
@@ -218,7 +243,8 @@ setup_and_check_visibility_body:
 	clr r15 */
 
 	; Now call the function with all parameters set
-	call check_visible_no_block
+	; call check_visible_no_block
+	call check_visible
 setup_and_check_visibility_epilogue:
 	pop r22
 	pop r21
