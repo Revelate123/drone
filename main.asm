@@ -76,7 +76,15 @@ RESET:
 
     call init_led              ; Initialize LED
     call init_keypad_simple    ; Initialize keypad
-    
+
+	; Added by Mark - initialise accident memory, so we dont override it
+	ldi r16, 0
+	sts found_crash_site, r16
+
+	ldi r16, -1
+	sts accident_x, r16
+	sts accident_y, r16
+
     jmp main
 
 
@@ -173,8 +181,9 @@ done_waiting_for_pb1:
 ; ============================================================================
 ; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
 ; ============================================================================
-main_loop:
 call display_route_points_tom2
+main_loop:
+
     ; ========================================
     ; KEYPAD POLLING LOOP (while waiting for tick)
     ; ========================================
@@ -304,6 +313,7 @@ continue_flying:
     rjmp tick_done              ; ? Not arrived yet
     
 waypoint_arrived:
+	call update_display_route1
     ; Arrived! Advance to next waypoint
     call advance_waypoint
     
