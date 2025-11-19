@@ -65,7 +65,6 @@ update_drone_position_body:
     rjmp update_drone_position_epilogue
     
 update_pos_arrived:
-call update_display_route1
     ldi r16, 0
     sts movement_accumulator, r16
     ldi r16, 1
@@ -93,8 +92,8 @@ load_current_waypoint_as_target:
     ; Get current waypoint index
     lds r16, current_waypoint_index
     
-    ; Calculate offset: index × 2 (each waypoint is x,y pair)
-    lsl r16                           ; r16 = index × 2
+    ; Calculate offset: index Ã— 2 (each waypoint is x,y pair)
+    lsl r16                           ; r16 = index Ã— 2
     
     ; Load waypoint address
     ldi ZL, low(cur_route_locations)
