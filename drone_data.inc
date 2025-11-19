@@ -44,7 +44,7 @@ distance_to_target: .byte 1       ; 0x07C4
 current_mountain_height: .byte 1  ; 0x07C5
 current_waypoint_index: .byte 1   ; 0x07C6  
 
-found_crash_site: .byte 1 ; TODO: initalise this in main
+found_crash_site: .byte 1 
 
 .cseg
 
