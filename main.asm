@@ -125,8 +125,6 @@ main:
 		sbic PIND, 0
 		rjmp wait_for_pb0
 	; Generate observation route
-	ldi r16, 3
-	sts vis_val, r16
 	call generate_route
 	reset_screen
 	call display_route_points_tom
@@ -189,7 +187,7 @@ done_waiting_for_pb1:
 ; ============================================================================
 ; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
 ; ============================================================================
-call display_route_points_tom2
+call handle_observation_point_arrival
 main_loop:
 
     ; ========================================
