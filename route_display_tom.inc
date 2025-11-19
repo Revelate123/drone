@@ -245,6 +245,10 @@ reset_screen
 	ldi YL, low(route_between_points)
 	ldi YH, high(route_between_points)
 
+	; Initialised the saved position - MARK ADDED
+	sts cur_route_position, YL
+	sts cur_route_position+1, YH
+
 ld counter, Y+
 sts chars_in_cur_pos, counter
 
@@ -264,6 +268,10 @@ skip_next:
 continue3:
 	dec r25
 	brne drpt2_loop
+
+	; Saved position after first display - MARK ADDED
+	sts cur_route_position, YL
+	sts cur_route_position+1, YH
 
 display_route_points2_epilogue:
 	pop r21
@@ -285,8 +293,9 @@ push r20
 push r21
 update_display_route_body2:
 reset_screen
-	ldi YL, low(route_between_points) ; Loads from the start, which is an error
-	ldi YH, high(route_between_points) ; Probably should load the current position in memory and then step through by cur_chars. AFter that save the new pos.
+	; MARK CHANGED
+	lds YL, cur_route_position ; Loads from the start, which is an error
+	lds YH, cur_route_position+1 ; Probably should load the current position in memory and then step through by cur_chars. AFter that save the new pos.
 ; ---------This block is for advancing to the next point in the path----
 adiw Y ,1
 lds counter, chars_in_cur_pos
@@ -315,6 +324,11 @@ skip_next2:
 continue4:
 	dec r25
 	brne drpt3_loop
+
+	; MARK ADDED 
+	sts cur_route_position, YL
+	sts cur_route_position+1, YH
+
 update_display_route_epilogue2:
 	pop r21
 	pop r20
@@ -390,5 +404,8 @@ cur_route_display: .byte 225*9
 
 chars_in_cur_pos: .byte 1
 route_between_points: .byte 15*9
+
+cur_route_position: .byte 2 ; Location that we are currently at in the route between two points
+
 .cseg
 end_route_display_tom:
