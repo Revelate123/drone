@@ -183,7 +183,7 @@ cvb_loop:
 	rcall scan_from_blocking_point
 	dec r26				
 	brne cvb_loop
-	;call check_for_accident
+	call check_for_accident
 check_visible_epilogue:
 	pop r26
 	pop r23
@@ -218,7 +218,7 @@ check_for_accident_body:
 	lds r17, crash_x
 	lds r18, crash_y
 cfa_loop:
-	call get_coords
+	call get_coords_visibility
 	adiw Y, 1
 	cp r17, x2
 	brne not_found

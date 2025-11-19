@@ -167,6 +167,49 @@ get_coords_epilogue:
 	pop YH
 	pop YL
 	ret
+
+get_coords_visibility:
+get_coords_visibility_prologue:
+	push YL
+	push YH
+	push ZL
+	push ZH
+	push r23
+	push r24
+	push r25
+get_coords_visibility_body:
+	ldi r24, low(visibility_map_size)
+	ldi r25, high(visibility_map_size)
+	mov ZL, r24
+	mov ZH, r25
+	adiw r25:r24, 1
+	sub YL, r24
+	sbc YH, r25
+	clr r22
+			
+	gcv_loop:
+	inc r22
+	ld r23, Z
+	mul r22, r23
+	mov r23, r0
+	cp  YL, r23
+	brsh gcv_loop
+	dec r22
+	; Now y is correct in r22
+	ld r23, Z
+	mul r22, r23
+	sub YL, r0
+	; now YL contains just the x coord
+	mov r21, YL
+get_coords_visibility_epilogue:
+	pop r25
+	pop r24
+	pop r23
+	pop ZH
+	pop ZL
+	pop YH
+	pop YL
+	ret
 	
 ; Loads offset for coordinates
 ; given in registers r21, r22 and where XH:XL are start of
