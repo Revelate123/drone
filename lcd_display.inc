@@ -471,7 +471,12 @@ update_status_prologue:
 update_status_body:
 	do_lcd_command 0b11000001
 	lds r21, drone_state
+	cpi r21, 'A'
+	brne display_status
+	ldi r21, 'F'
+display_status:
 	do_lcd_data_from_reg r21
+
 	rjmp update_status_epilogue
 update_status_epilogue:
 	pop r16
