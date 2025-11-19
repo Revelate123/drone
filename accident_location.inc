@@ -66,8 +66,7 @@ clear_bottom_row:
     
     ; Regular number display
     cpi r20, 10
-    brsh crash_x_two_digits
-    do_lcd_data ' '      
+    brsh crash_x_two_digits 
     subi r20, -'0'           
     do_lcd_data_from_reg r20
     rjmp crash_x_done
@@ -96,8 +95,7 @@ crash_x_done:
     
     ; Regular number display
     cpi r21, 10
-    brsh crash_y_two_digits
-    do_lcd_data ' '     
+    brsh crash_y_two_digits    
     subi r21, -'0'        
     do_lcd_data_from_reg r21
     rjmp crash_y_done
