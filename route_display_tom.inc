@@ -53,8 +53,8 @@ store_display_route_body:
 
 		dec r24
 		brne sdr_loop
-
-
+clr r16
+st Y+, r16
 store_display_route_epilogue:
 pop r22
 pop r21
@@ -203,15 +203,13 @@ do_lcd_command 0b00000111 ; change entry mode to shift left
 drpt_loop2:
 	//if pointer == char_count: repeat
 	ld pointer, Y+
-	do_lcd_data_from_reg pointer
-	inc counter
-	cp counter, char_count
+	cpi pointer, 0
 	breq reset_counter2
+	do_lcd_data_from_reg pointer
 	rjmp continue2
 reset_counter2:
-	clr counter
-	sub YL, char_count
-	sbc YH, counter
+	ldi YL, low(cur_route_display)
+	ldi YH, high(cur_route_display)
 continue2:
 ;call sleep_500ms
 update_display_route_epilogue:
