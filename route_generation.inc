@@ -23,7 +23,7 @@ jmp end_route_generation
 .def fully_explored_flag = r15
 .def temp = r16
 .def counter = r17
-.def route_size_reg = r13 ; TODO: figure out why this for r13 works, but does not if its r18
+.def route_size_reg = r13 
 .def x_idx = r19
 .def y_idx = r20
 ; Do NOT SAVE OVER r21 and r22
@@ -110,8 +110,7 @@ generate_route_body:
 		
 		st Z+, r21 ; save x value 
 		st Z+, r22 ; save y value
-		; TODO: figure out how I want to save the height; for now, just skipping over this memory location
-			; This does not handle overflow, should be fine for now
+		; Skip over this memory location
 		adiw Z, 1
 		
 		inc route_size_reg 
@@ -188,7 +187,7 @@ generate_route_epilogue:
 	pop XL
 	ret
 
-; Sets up parameters and calls check_visible_no_block - TODO: THIS WILL NEED TO BE CHANGED WITH THE FINAL FUNCTION
+; Sets up parameters and calls check_visible
 ; Input:
 ;   r21 = x coordinate
 ;   r22 = y coordinate
@@ -223,7 +222,7 @@ setup_and_check_visibility_body:
 	adc XH, temp
 	ld r20, X  ; Load height into z1 (r20)
 
-	; Set visibility distance - TODO: currently hard coded, just need to set where we save this
+	; Set visibility distance
 	lds r14, vis_val
 	mul r14, r14
 	mov r14, r0

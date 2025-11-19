@@ -176,7 +176,7 @@ handle_observation_point_arrival:
 
     sts hovering_counter, r16
     
-    ; TODO: Check if accident visible here
+    ; Check if accident visible here
     
 	call check_accident_visible
 	lds r16, main_crash_site_found
