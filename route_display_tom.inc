@@ -131,7 +131,8 @@ store_digits:
 
 		dec r24
 		brne sdr2_loop
-
+		; Mark the end of string
+		st Y, r24
 
 store_display_route2_epilogue:
 pop r22
@@ -264,7 +265,10 @@ skip_next:
 continue3:
 	dec r25
 	brne drpt2_loop
-
+	ldi r21, low(route_between_points)
+	sts cur_route_disp_YL, r21
+	ldi r21, high(route_between_points)
+	sts cur_route_disp_YH, r21 
 display_route_points2_epilogue:
 	pop r21
 	pop r20
@@ -285,8 +289,8 @@ push r20
 push r21
 update_display_route_body2:
 reset_screen
-	ldi YL, low(route_between_points) ; Loads from the start, which is an error
-	ldi YH, high(route_between_points) ; Probably should load the current position in memory and then step through by cur_chars. AFter that save the new pos.
+	lds YL, cur_route_disp_YL ; Loads from the start, which is an error
+	lds YH, cur_route_disp_YH ; Probably should load the current position in memory and then step through by cur_chars. AFter that save the new pos.
 ; ---------This block is for advancing to the next point in the path----
 adiw Y ,1
 lds counter, chars_in_cur_pos
@@ -296,6 +300,8 @@ advance_disp:
 	brne advance_disp
 ; ----------------------------------------------------------------------
 ; Probably save the YL and YH in memory now.
+sts cur_route_disp_YL, YL
+sts cur_route_disp_YH, YH
 ld counter, Y+
 sts chars_in_cur_pos, counter
 
@@ -312,6 +318,8 @@ drpt3_loop:
 	rjmp continue4
 skip_next2:
 	ld counter, Y+ ; Maybe if counter is a value e.g. 0xff we break. THis would require adding one extra store at the end of store_display_route2
+	cpi counter, 0
+	breq update_display_route_epilogue2
 continue4:
 	dec r25
 	brne drpt3_loop
@@ -390,5 +398,7 @@ cur_route_display: .byte 225*9
 
 chars_in_cur_pos: .byte 1
 route_between_points: .byte 15*9
+cur_route_disp_YL: .byte 1
+cur_route_disp_YH: .byte 1
 .cseg
 end_route_display_tom:
