@@ -31,27 +31,19 @@ explored_map_size: .byte 1
 explored_map_start: .byte 15*15
 
 ; Route from generation
-.org main_map_memory_start+750
+
 route_size: .byte 1
 route_locations: .byte 15*15*3
 
 ; Current path waypoints
-.org main_map_memory_start+750+675+1
-cur_route_size: .byte 1
-cur_route_locations: .byte 20
 
-.org main_map_memory_start+750+675+1+1+20       ; start+1447
+cur_route_size: .byte 1
+cur_route_locations: .byte 50
+
+       ; start+1447
 crash_x: .byte 1
 crash_y: .byte 1
 vis_val: .byte 1                                ; start+1450
-
-.org main_map_memory_start+1450
-cur_RtDisp_addr: .byte 2
-route_printed: .byte 9*15*15                    ; 9 chars / point, max all points iterated
-
-.org main_map_memory_start+3475+1
-cur_PtDisp_addr: .byte 2
-path_printed: .byte 9*10						; 9 chars / point, max 10 points in a path
 
 ; ============================================================================
 ; CODE SEGMENT
@@ -114,6 +106,8 @@ main:
 ; --------------------------------------
 	.include "accident_location.inc"
 
+
+	
 	; User to input location of accident scene (or *,* for no accident)
 	call get_crash_xy
 	reset_screen
@@ -378,9 +372,9 @@ accident_location_end1:
 ; ============================================================================
 ; FLASH DATA - 7x7 Map
 ; ============================================================================
-map_size: .db 7
+map_size: .db 15
 map: 
-    .db 0,0,0,0,0,0,0 ,     0,2,2,2,2,2,0,     0,2,4,4,4,2,0,     0,2,4,6,4,2,0,     0,2,4,4,4,2,0,     0,2,2,2,2,2,0,     0,0,0,0,0,0,0
+    .db 5,5,7,3,6,7,8,8,13,5,4,7,1,14,11,4,11,7,14,8,11,7,6,3,1,8,4,9,10,12,8,9,7,1,9,0,9,7,5,13,2,4,3,10,13,5,5,1,14,8,0,11,13,7,7,13,6,9,14,2,1,5,0,14,2,14,7,12,0,10,8,10,14,6,3,7,5,2,6,9,7,5,1,10,12,13,9,14,11,9,5,3,12,2,10,2,14,0,0,3,9,5,10,14,10,10,0,10,2,13,11,7,10,10,0,13,0,7,14,12,5,3,6,7,13,2,13,11,2,9,14,9,6,1,4,5,7,12,14,13,6,0,0,2,6,0,7,12,7,3,11,5,10,8,1,5,7,6,9,9,2,8,13,14,1,4,14,0,4,1,0,2,1,7,12,14,9,11,7,2,12,7,1,14,6,6,4,9,1,6,3,0,2,11,0,5,3,1,6,7,12,8,3,0,1,8,8,3,2,11,10,5,11,9,3,4,1,8,2,4,2,10,12,5,14
 
 
 /* Working Version 0 without timer and keypad
