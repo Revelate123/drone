@@ -293,7 +293,7 @@ reset_screen
 	lds YL, cur_route_disp_YL
 	lds YH, cur_route_disp_YH
 ; ---------This block is for advancing to the next point in the path----
-lds counter, Y
+ld counter, Y+
 clr r25
 add YL, counter
 adc YH, r25
