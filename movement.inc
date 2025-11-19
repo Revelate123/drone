@@ -56,13 +56,14 @@ update_drone_position_body:
     ; Move one step toward current waypoint
     rcall move_one_step_to_target
     
+	; Removed these redudant section
     ; Check if arrived after moving
-    rcall check_at_target_xy
-    tst r16
-    brne update_pos_arrived
+    ;rcall check_at_target_xy
+    ;tst r16
+    ;brne update_pos_arrived
     
-    ldi r16, 0
-    rjmp update_drone_position_epilogue
+    ;ldi r16, 0
+    ;rjmp update_drone_position_epilogue
     
 update_pos_arrived:
     ldi r16, 0
