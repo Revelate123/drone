@@ -177,8 +177,11 @@ handle_observation_point_arrival:
     sts hovering_counter, r16
     
     ; TODO: Check if accident visible here
-    ; call check_accident_visible
     
+	call check_accident_visible
+	lds r16, main_crash_site_found
+	cpi r16, 1
+	
     ; After hovering, generate path to next observation point
     call generate_path_to_next_observation
     call display_route_points_tom2
