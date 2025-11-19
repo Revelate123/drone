@@ -254,7 +254,6 @@ clr r21
 drpt2_loop:
 	; Load and display the characters of the observation point
 	ld pointer, Y+ 
-	breq display_route_points2_epilogue
 	do_lcd_data_from_reg pointer
 	dec counter
 	breq skip_next ; Once counter is zero, we are at another char_count and should load and skip it.
