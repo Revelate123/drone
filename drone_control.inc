@@ -102,7 +102,7 @@ generate_path_to_next_observation:
     call path_between_two_points
     
     ; Reset waypoint index to 0
-    ldi r16, 0
+    ldi r16, 1
     sts current_waypoint_index, r16
     
     pop r17
