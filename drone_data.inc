@@ -46,6 +46,8 @@ current_waypoint_index: .byte 1   ; 0x07C6
 
 found_crash_site: .byte 1 
 
+main_crash_site_found: .byte 1
+
 .cseg
 
 end_drone_data:
