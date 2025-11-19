@@ -112,6 +112,7 @@ main:
 ; -----------Added by Mo----------------
 	.include "keypad.inc"
 ; --------------------------------------
+	.include "accident_location.inc"
 
 	; User to input location of accident scene (or *,* for no accident)
 	call get_crash_xy
@@ -178,6 +179,13 @@ done_waiting_for_pb1:
     sts simulation_counter, r16
     sts simulation_counter+1, r16
 
+	; Testing
+	/*
+	ldi r16, 2
+	sts accident_x, r16
+	ldi r16, 1
+	sts accident_y, r16
+	*/
 ; ============================================================================
 ; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
 ; ============================================================================
@@ -292,6 +300,9 @@ not_hovering:
     ; Check if crashed
     cpi r16, 'C'
     breq route_crashed
+
+	cpi r16, 'A'
+	breq accident_location_found
     
     ; Check if paused - INVERTED CONDITION
     cpi r16, 'P'
@@ -341,6 +352,16 @@ route_crashed:
     
     call flash_led_continuous
     rjmp route_crashed
+
+accident_location_found:
+	; Show all LEDs for completion
+    ldi r16, 8
+    call show_led_progress
+	call display_crash_location
+	rjmp accident_location_end1
+
+accident_location_end1:
+	rjmp accident_location_end1
 
 ; ============================================================================
 ; INCLUDES
