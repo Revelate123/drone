@@ -219,7 +219,9 @@ check_for_accident_body:
 	lds r18, crash_y
 cfa_loop:
 	call get_coords_visibility
-	adiw Y, 1
+	ld z2, Y+
+	cpi z2, 0
+	breq not_found
 	cp r17, x2
 	brne not_found
 	cp r18, y2
