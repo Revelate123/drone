@@ -132,8 +132,10 @@ store_digits:
 		dec r24
 		brne sdr2_loop
 		; Mark the end of string
-		st Y, r24
+		st Y+, r24
 
+		ldi r16, 0xff
+		st Y+, r16
 store_display_route2_epilogue:
 pop r22
 pop r21
@@ -253,7 +255,8 @@ clr r21
 drpt2_loop:
 	
 	ld pointer, Y+
-	
+	cpi pointer, 0
+	breq display_route_points2_epilogue
 	do_lcd_data_from_reg pointer
 	dec counter
 	breq skip_next
