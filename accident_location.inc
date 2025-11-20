@@ -29,7 +29,7 @@ check_accident_visible_epligoue:
     push r19
     push r20
     ; load visibility into r15:r14
-    lds r14 vis_val
+    lds r14, vis_val
     mul r14, r14
     mov r14, r0
     mov r15, r1
