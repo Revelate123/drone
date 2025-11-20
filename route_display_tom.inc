@@ -134,7 +134,7 @@ store_digits:
 		; Mark the end of string
 		st Y+, r24
 
-		ldi r16, 0xff
+		clr r16
 		st Y+, r16
 store_display_route2_epilogue:
 pop r22
@@ -246,26 +246,26 @@ reset_screen
 	ldi YL, low(route_between_points)
 	ldi YH, high(route_between_points)
 
-ld counter, Y+
-sts chars_in_cur_pos, counter
+ld counter, Y+ ; Load the number of characters of the following observation point
 
-ldi r25, 16
+ldi r25, 16 ; loop for 16 characters
 clr pointer
 clr r21
 drpt2_loop:
-	
-	ld pointer, Y+
-	cpi pointer, 0
-	breq display_route_points2_epilogue
+	; Load and display the characters of the observation point
+	ld pointer, Y+ 
 	do_lcd_data_from_reg pointer
 	dec counter
-	breq skip_next
+	breq skip_next ; Once counter is zero, we are at another char_count and should load and skip it.
 	rjmp continue3
 skip_next:
 	ld counter, Y+
+	cpi counter, 0 ; If the character count was 0, then it is the end of the route.
+	breq store_Y 
 continue3:
 	dec r25
 	brne drpt2_loop
+store_Y:
 	ldi r21, low(route_between_points)
 	sts cur_route_disp_YL, r21
 	ldi r21, high(route_between_points)
@@ -290,22 +290,20 @@ push r20
 push r21
 update_display_route_body2:
 reset_screen
-	lds YL, cur_route_disp_YL ; Loads from the start, which is an error
-	lds YH, cur_route_disp_YH ; Probably should load the current position in memory and then step through by cur_chars. AFter that save the new pos.
+	lds YL, cur_route_disp_YL
+	lds YH, cur_route_disp_YH
 ; ---------This block is for advancing to the next point in the path----
-adiw Y ,1
-lds counter, chars_in_cur_pos
-advance_disp:
-	adiw Y, 1
-	dec counter
-	brne advance_disp
+ld counter, Y+
+clr r25
+add YL, counter
+adc YH, r25
 ; ----------------------------------------------------------------------
-; Probably save the YL and YH in memory now.
+; Save the YL and YH in memory now.
 sts cur_route_disp_YL, YL
 sts cur_route_disp_YH, YH
-ld counter, Y+
-sts chars_in_cur_pos, counter
 
+; Get next char counter
+ld counter, Y+
 ldi r25, 16 ; Also need to consider if we are at the end of the route, then we should probably just print nothing/exit
 clr pointer
 clr r21
@@ -318,7 +316,7 @@ drpt3_loop:
 	breq skip_next2
 	rjmp continue4
 skip_next2:
-	ld counter, Y+ ; Maybe if counter is a value e.g. 0xff we break. THis would require adding one extra store at the end of store_display_route2
+	ld counter, Y+
 	cpi counter, 0
 	breq update_display_route_epilogue2
 continue4:

@@ -21,6 +21,39 @@ check_accident_visible_epligoue:
     cp r16, r17
     brne not_found_al ; If Y doesn't match, exit
     
+    ;------------------------------------------------
+    push r14
+    push r15
+    push r16
+    push r18
+    push r19
+    push r20
+    ; load visibility into r15:r14
+    lds r14, vis_val
+    mul r14, r14
+    mov r14, r0
+    mov r15, r1
+
+    lds r18, drone_current_x
+    lds r19, drone_current_y
+    lds r20, drone_altitude
+
+    clr r16
+    sts found_crash_site, r16
+    call check_visible
+
+    pop r20
+    pop r19
+    pop r18
+    pop r16
+    pop r15
+    pop r14
+
+    lds r16, found_crash_site
+    cpi r16, 0
+    breq not_found_al
+    ;------------------------------------------------
+
     ; Both coordinates match - accident found
     ldi r16, 1
     sts main_crash_site_found, r16
