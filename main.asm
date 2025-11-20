@@ -268,6 +268,37 @@ check_tick:
     ; Clear tick flag
     ldi r16, 0
     sts simulation_tick_flag, r16
+
+	; cedric Set 'H' state when hovering
+    lds r16, hovering_counter
+    cpi r16, 0
+    breq not_in_hover_state
+    
+    ; Is hovering then show 'H' but don't override P, C, D, A
+    lds r17, drone_state
+    cpi r17, 'C'                ; Don't change C
+    breq not_in_hover_state
+    cpi r17, 'D'                ; Don't change D
+    breq not_in_hover_state
+    cpi r17, 'A'                ; Don't change A
+    breq not_in_hover_state
+    cpi r17, 'P'                ; Don't change P
+    breq not_in_hover_state
+    
+    ldi r16, 'H'
+    sts drone_state, r16
+    rjmp after_hover_state_check
+    
+not_in_hover_state:
+    ; Not hovering so restore 'F' if was 'H' but not if 'P'
+    lds r16, drone_state
+    cpi r16, 'H'
+    brne after_hover_state_check
+    ldi r16, 'F'
+    sts drone_state, r16
+    
+after_hover_state_check:
+    ; nop
     
     ; Show progress: route_index on LEDs
     lds r16, route_index
