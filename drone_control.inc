@@ -75,13 +75,15 @@ generate_path_to_next_observation:
     
     ; Get next observation point
     lds r16, route_index
+    
     inc r16
     sts route_index, r16
-    
     ; Check if finished entire route
     lds r17, route_size
     cp r16, r17
     brsh gpno_route_finished
+
+	
     
     ; Calculate offset in route_locations: index × 3
     ldi r17, 3
@@ -119,7 +121,6 @@ gpno_route_finished:
     ; Display results
     ldi r16, 'D'                  ; Done state
     sts drone_state, r16
-    
     pop r17
     pop r16
     pop ZH
@@ -184,7 +185,11 @@ handle_observation_point_arrival:
 	
     ; After hovering, generate path to next observation point
     call generate_path_to_next_observation
+	lds r16, drone_state
+	cpi r16, 'D'
+	breq skippy
     call display_route_points_tom2
+skippy:
     pop r16
     ret
 

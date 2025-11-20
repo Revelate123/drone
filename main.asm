@@ -363,6 +363,7 @@ route_complete:
 	lds r16, drone_state
 	cpi r16, 'A'
 	breq accident_location_found
+	;call clear_finished
 	route_complete2:
     ; Show all LEDs for completion
     ldi r16, 8
@@ -382,6 +383,7 @@ route_crashed:
     rjmp route_crashed
 
 accident_location_found:
+;call clear_finished
 call update_status
 	; Show all LEDs for completion
     ldi r16, 8
