@@ -1,5 +1,5 @@
-; Determines what is visible
-
+; This file contains functions for calculating the visible map locations.
+; It provides the interface functions check_visible.
 
 jmp end_visibility
 
@@ -16,9 +16,16 @@ jmp end_visibility
 .def temp = r24
 
 
-; Calculate distance^2 between two points
-; Stores output in register r17:r16
-; distance(x1, y1, z1, x2, y2, z2):
+; Calculates distance^2 between two points (x1,y1,z1) , (x2,y2,z2)
+; Input:
+;   r18 = x1
+;   r19 = y2
+;   r20 = z1
+;   r21 = x2
+;   r22 = y2
+;   r23 = z2
+; Output:
+;   distance^2 stored in r17:r16
 distance:
 distance_prologue:
 	push YL
@@ -58,6 +65,10 @@ distance_epilogue:
 	ret
 
 ; Clears the visibility map
+; Input:
+;   None
+; Output:
+;   visibility_map set to all 0's
 clear_visibility_map:
 clear_visibility_map_prologue:
 	push YL
@@ -83,15 +94,16 @@ clear_visibility_map_epilogue:
 	pop YL
 	ret
 
-; computes the visible locations without considering blocking
-; Parameters:
-; x1 = r18
-; y1 = r19
-; z1 = r20
-; visL = r14
-; visH = r15
-; Effects:
-; Changes the visibility map stored in data memory
+; Computes the visible locations from (x1,y1,z1) with visibility (visH:visL)
+; without considering blocking
+; Input:
+;   r18 = x1
+;   r19 = y1
+;   r20 = z1
+;   r14 = visL
+;   r15 = visH
+; Output:
+;    visbility_map updated
 check_visible_no_block:
 check_visible_no_block_prologue:
 	push YL
@@ -155,6 +167,16 @@ check_visible_no_block_epilogue:
 	pop YL
 	ret
 
+
+; Computes the visible locations from (x1,y1,z1) with visibility (visH:visL). 
+; Input:
+;   r18 = x1
+;   r19 = y1
+;   r20 = z1
+;   r14 = visL
+;   r15 = visH
+; Output:
+;    visbility_map updated
 check_visible:
 check_visible_prologue:
 	push YL
@@ -200,6 +222,14 @@ check_visible_epilogue:
 	pop YL
 	ret
 
+
+; Checks whether the accident location was visible in the visibility_map
+; Input:
+; crash_x (variable in data memory)
+; crash_y (variable in data memory)
+; Output:
+;    If accident visible sets found_crash_site = 1
+;    Otherwise no effect
 check_for_accident:
 check_for_accident_prologue:
 push r16
@@ -243,12 +273,19 @@ pop r17
 pop r16
 ret
 
-; Computes the bounds and stores results in registers lower_bound_X and lower_bound_Y
-; Takes signed integer inputs, @0 and @1 which are added to x2 and y2 prior. 
-; Bounds are |x1 - (x2 + @0)| and |y1 - (y2 + @1)|
-; To compute a straight line between two points, set @0 = 0 and @1 = 0.
+
 .def lower_bound_X = r16
 .def lower_bound_Y = r17
+; Computes horizontal plane bounds and stores results in registers lower_bound_X and lower_bound_Y
+; Takes signed integer inputs, @0 and @1 which are added to x2 and y2 prior to calculation. 
+; Bounds are stored as |x1 - (x2 + @0)| and |y1 - (y2 + @1)|
+; E.g. To compute a straight line between two points, set @0 = 0 and @1 = 0.
+; Inputs:
+;   @0 = x offset (integer)
+;   @1 = y offset (integer)
+; Ouputs:
+;   r16 = lower_bound_X
+;   r17 = lower_bound_Y
 .macro compute_bound
 	;Store conflicts to the stack
 	push x1			
@@ -270,12 +307,15 @@ ret
 	pop x1
 .endmacro
 
+
+.def upper_bound_X = r14
+.def upper_bound_Y = r15
+.def lower_bound_X = r16
+.def lower_bound_Y = r17
+.def x_step = r25
+.def y_step = r24
 ; Takes as input the current location as an (x1,y1,z1)
-; and blocking cell location (x2,y2,z2) and computes boundary slopes to registers:
-; upper_bound_X
-; upper_bound_Y
-; lower_bound_X
-; lower_bound_Y
+; and blocking cell location (x2,y2,z2) and computes upper and lower boundary slopes.
 ; Explanation:
 ; Boundary slopes are computed assuming that there are four corners to each cell.
 ; By drawing two lines from the centre of the current cell to the two corners which give the
@@ -287,12 +327,21 @@ ret
 ; a) Four quadrants, which cast diagonal shadows into their quadrants.
 ; b) Four orthoganals, which cast shadows in a straight line. e.g. along the X or Y axis.
 ; c) The blocking cell and drone are in the same location.
-.def upper_bound_X = r14
-.def upper_bound_Y = r15
-.def lower_bound_X = r16
-.def lower_bound_Y = r17
-.def x_step = r25
-.def y_step = r24
+; Inputs:
+;   r18 = x1
+;   r19 = y2
+;   r20 = z1
+;   r21 = x2
+;   r22 = y2
+;   r23 = z2
+; Outputs:
+;   r8  = x_step
+;   r9  = edge_of_map
+;   r13 = y_step
+;   r14 = upper_bound_X
+;   r15 = upper_bound_Y
+;   r16 = lower_bound_X
+;   r17 = lower_bound_Y
 calc_blocking_bounds:
 calc_blocking_bounds_prologue:
 	push YL
@@ -452,23 +501,29 @@ pop YH
 pop YL
 ret
 
-
-; Moves registers X and Z to the next locations on the map.
-; Uses registers:
-; r31 = ZH 
-; r30 = ZL
-; r27 = XH
-; r26 = XL
-; r22 = y2
-; r21 = x2
-; r17 = temp
-; r13 = y_step
-; r9 = edge_of_map
-; r8 = x_step
-; r2 = current linear position in map
 .def y_step = r13
 .def  x_step = r8
 .def  edge_of_map = r9
+; Moves registers X and Z to the next location on the map dependant on x_step,
+; y_step, and edge_of_map. For use with scan_from_blocking_point.
+; Inputs:
+;   r31 = ZH 
+;   r30 = ZL
+;   r27 = XH
+;   r26 = XL
+;   r22 = y2
+;   r21 = x2
+;   r17 = temp
+;   r13 = y_step
+;   r9  = edge_of_map
+;   r8  = x_step
+;   r2  = current linear position in map
+; Outputs:
+;   r31 = ZH 
+;   r30 = ZL
+;   r27 = XH
+;   r26 = XL  
+;   r24 = flag set when reached edge_of_map
 next_el:
 next_el_prologue:
 	push r8
@@ -538,21 +593,16 @@ next_el_epilogue:
 	ret
 
 ; This function computes whether individual cells are blocked based on the drone location
-; and the current location causing blocking.
+; (x1,y1,z1) and a chosen blocking location (x2,y2,z2).
 ; Inputs:
-; r23 = z_block
-; r22 = y_block 
-; r21 = x_block
-; r20 = z_drone
-; r19 = y_drone
-; r18 = x_drone 
-; r17 = lower_bound_Y 
-; r16 = lower_bound_X 
-; r15 = upper_bound_Y 
-; r14 = upper_bound_X 
-; r13 = y_step
-; r9 = edge_of_map
-; r8 = x_step
+;   r23 = z_block
+;   r22 = y_block 
+;   r21 = x_block
+;   r20 = z_drone
+;   r19 = y_drone
+;   r18 = x_drone 
+; Outputs:
+;    visbility_map updated
 .equ block_slope_Z = 1
 .equ block_slope_XY = 2
 scan_from_blocking_point:
@@ -672,17 +722,24 @@ ret
 
 
 
-
-; Bounds are stored in registers:
 .def low_X = r3
 .def low_Y = r4
 .def high_X = r14
 .def high_Y = r15
 .def cur_X = r16
 .def cur_Y = r17
-; (x1,y1,z1) = drone location
-; (x2,y2,z2) = cur location considered
-; returns bool to register r5 (1 if within bounds, 0 if outside)
+; Checks whether the current location (x2,y2,z2) is within the upper and
+; lower bounds relative to the drone location (x1,y1,z1)
+; Inputs:
+;   r3  = lower bound X
+;   r4  = lower bound Y
+;   r14 = upper bound X
+;   r15 = upper bound Y
+;   r16 = current slope X
+;   r17 = current slope Y
+; Outputs:
+;    If within bounds sets r5 = 1
+;    Otherwise sets        r5 = 0 
 check_bounds:
 check_bounds_prologue:
 	push r3
@@ -738,6 +795,15 @@ check_bounds_epilogue:
 	ret
 
 
+; Compares two slopes and sets the visibility_map at the current location to 0 
+; if the location is blocked. Each slopes can be represented as Vertical / Horizontal
+; Inputs:
+;   @0 = Horizontal slope 1
+;   @1 = Vertical slope 1
+;   @2 = Horizontal slope 2
+;   @3 = Vertical slope 2
+; Outputs:
+;    visbility_map updated
 .macro compare_slopes
 push r16
 push r17
@@ -757,15 +823,17 @@ cs_end:
 	pop r16
 .endmacro
 
-; Register inputs:
-; r11  = height difference drone to block
-; r10  = length difference drone to block
-; r12 = z block location
-; r7 = height difference drone to cur
-; r6 = length difference drone to cur
-; r20 = z drone
-; r23 = z cur
-; Z 
+; Checks if a location is blocked by checking slopes relative to the drone 
+; position (x1,y1,z1)
+; Inputs:
+;   r11 = Vertical slope drone to block
+;   r10 = Horizontal slope drone to block
+;   r12 = z block location
+;   r7  = Vertical slope drone to cur
+;   r6  = Horizontal slope drone to cur
+;   r20 = Drone height
+;   r23 = Current height
+;   Z   = Location of current in visibility_map
 ; Register outputs;
 ; None
 blocked:
@@ -783,23 +851,19 @@ push ZL
 blocked_body:
 	cp r12, r20
 	brsh bb_higher
-	;if z_block < z_drone:
-		;only locations with lower z values than z_block can be blocked
-		;and they will have slopes greater
+	; if z_block < z_drone only locations with lower z values
+	; than z_block can be blocked and they will have slopes greater
 		cp r23, r12
 		brsh blocked_epilogue
 		compare_slopes r11, r10, r7, r6
 		rjmp blocked_epilogue
 bb_higher:
-	;else:
-		;Any location may be blocked.
 		cp r23, r20
 		brsh bb_next
+		; If z_current < z_drone and z_drone < z_block then current is blocked.
 		ldi r21, 0
 		st Z, r21
 		rjmp blocked_epilogue
-		;if z_cur < z_drone:
-			;it is definitely blocked.
 bb_next:
 		compare_slopes r7, r6, r11, r10
 
@@ -817,11 +881,18 @@ pop r11
 ret
 
 
-; Calculates the slope between two points
-; (x1, y1, z1) and (x2, y2, z2)
-; Stores the results:
-; r6 = (x1-x2)^2 + (y1-y2)^2
-; r7 = (z1-z2)^2
+; Calculates the slope between two points (x1, y1, z1) and (x2, y2, z2).
+; Slopes are stored as Vertical / Horizontal 
+; Inputs:
+;   r18 = x1
+;   r19 = y2
+;   r20 = z1
+;   r21 = x2
+;   r22 = y2
+;   r23 = z2
+; Outputs:
+;   r6 = (x1-x2)^2 + (y1-y2)^2
+;   r7 = (z1-z2)^2
 slope:
 slope_prologue:
 	push x1
