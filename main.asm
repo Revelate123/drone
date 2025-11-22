@@ -181,7 +181,10 @@ done_waiting_for_pb1:
 ; ============================================================================
 ; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
 ; ============================================================================
+clr r16
+sts route_index, r16
 call handle_observation_point_arrival
+
 main_loop:
 
     ; ========================================
