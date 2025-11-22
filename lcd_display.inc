@@ -81,21 +81,13 @@ rjmp end_of_file
 .endmacro
 
 
-; Displays a message to the lcd reset_screen
+; Displays a message to the lcd reset_screen, relies on print_multiple
 ; Inputs:
 ;   @0 = location in program memory of the string
 ;   @1 = set to 1 to return cursor to home, 0 to leave at current location
 ; Outputs:
 ;   Prints a string to the LCD
 .macro input_msg_to_display
-	; @0 is the message from pmem
-	; assuming it fits 16 chars
-	; @1=0: keep cursor at the end, @1=1: move cursor back to home
-	; uses ZL, ZH, r17, r18, r19 pls do stack init for this
-	; clear counter (r17)
-	; temp = r18
-	; delay counter (r19)
-	; keeping cursor option (r20)
 	push r17
 	push r18
 	push r20
@@ -116,6 +108,11 @@ rjmp end_of_file
 
 ; Used with the Macro input_msg_to_display, prints all characters to the LCD
 ; Inputs:
+;   ZL  = low(string_location<<1)
+;   ZH  = high(string_location<<1)
+;   r20 = set to 1 to return cursor to home, 0 to leave at current location
+; Outputs:
+;   Prints a string to the LCD
 print_multiple:
 	clr r17
 print_loop:
@@ -133,20 +130,12 @@ fin_scrolling:
 skip_back_to_home:
 	ret
 
-; ===========================================================
-; displaying route and updating route for search
-; ============================================================
-
-
-
-
-
-
+; Updates the Drone status on the LCD screen. 
+; Inputs:
+;   reads from data memory drone_state
+; Outputs:
+;   Updates the drone status on the LCD screen
 update_status:
-	; r21 includes the status
-	; r21 = 0 Fly
-	; r21 = 1 Hover/Pause
-	; r21 = 2 Crash
 update_status_prologue:
 	push r21
 	push r16
@@ -154,7 +143,7 @@ update_status_body:
 	do_lcd_command 0b11000001
 	lds r21, drone_state
 	cpi r21, 'A'
-	brne display_status
+	brne display_status ; Avoid displaying 'A' as handled elsewhere
 	ldi r21, 'F'
 display_status:
 	do_lcd_data_from_reg r21
@@ -165,9 +154,12 @@ update_status_epilogue:
 	pop r21
 	ret
 
+; Updates the drone speed on the LCD screen
+; Inputs:
+;   reads from data memory drone_speed
+; Outputs:
+;   Updates the drone speed on the LCD screen
 update_speed:
-	; r21 had the speed value in dm/s
-	; max is 29 m/s
 update_speed_prologue:
 push r21
 push r16
@@ -198,14 +190,16 @@ update_speed_epilogue:
 	do_lcd_data 'm'
 	do_lcd_data '/'
 	do_lcd_data 's'
-	;rcall sleep_50ms			; for buffer, to be able to see
 	pop r16
 	pop r21
 	ret
 
+; Updates the drone height on the LCD screen. Maximum height of 15
+; Inputs:
+;   reads from data memory drone_altitude
+; Outputs:
+;   Updates the drone altitude on the LCD screen
 update_height:
-	; r21 had the speed value in m
-	; max is 15 m
 update_height_prologue:
 push r21
 push r16
@@ -225,14 +219,9 @@ print_10s_h:
 	do_lcd_data_from_reg r21
 	rjmp update_height_epilogue
 update_height_epilogue:
-	;rcall sleep_50ms  ; for buffer, to be able to see
 	pop r16
 	pop r21
 	ret
-
-;
-; Send a command to the LCD (r16)
-;
 
 
 lcd_command:
