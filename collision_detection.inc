@@ -16,16 +16,18 @@ jmp end_collision_detection
 ; CHECK_COLLISION
 ; Checks if drone has crashed into terrain
 ; Called after each movement
-; 
 ; Logic:
 ;   - Get current position (x, y)
 ;   - Get terrain height at that position
 ;   - Compare altitude with terrain height
-;   - If altitude < terrain: CRASH!
-;
-; Returns: Nothing (sets drone_state to 'C' if crashed)
-; 
-
+;   - If altitude < terrain: CRASH
+; Input:
+;   drone_current_x = Drone X coordinate
+;   drone_current_y = Drone Y coordinate
+;   drone_altitude = Drone altitude above ground
+;   main_map_start = Terrain height map
+; Output:
+;   drone_state = Set to 'C' if crashed, unchanged otherwise
 check_collision:
 check_collision_prologue:
     push r16
