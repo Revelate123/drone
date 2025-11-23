@@ -12,6 +12,19 @@ jmp end_drone_control
 
 ; INITIALIZE_DRONE
 ; Sets up drone at first observation point and generates first path
+; Input:
+; route_locations =  Observation points
+; main_map_start = Terrain height map for initial altitude
+; Output:
+; route_index = set to 0
+; current_waypoint_index = set to 0
+; drone_current_x = Initial X position
+; drone_current_y = Initial Y position
+; drone_altitude = Initial altitude
+; drone_state = Set to 'F'
+; drone speed = Set to 5 (can be pre configured)
+; cur_route_locations = populated with way points to next observation point
+; cur_route_size = Number of waypoints in path
 initialize_drone:
     push r16
     push ZL
@@ -58,7 +71,19 @@ initialize_drone:
 ; GENERATE_PATH_TO_NEXT_OBSERVATION
 ; Generates waypoints from current position to next observation point
 ; Calls path_between_two_points
-
+; Input:
+; drone_current_x = Current drone X position
+; drone_current_y = Current drone Y position
+; route_index = Current position in observation route
+; route_size = Total number of observation points
+; route_locations = observation points (x,y,z)
+; Output:
+; route_index = Incremented to next observation point
+; drone_target_z = Target altitude for next observation point
+; current_waypoint_index = Reset to 1 (start of new path)
+; cur_route_locations = Populated with waypoint path
+; cur_route_size = Number of waypoints in generated path
+; drone_state = Set to 'D' if route finished
 generate_path_to_next_observation:
     push r20
     push r21
@@ -135,7 +160,11 @@ gpno_route_finished:
 ; ADVANCE_WAYPOINT
 ; Moves to next waypoint in current path
 ; If all waypoints done, handles observation point arrival
-
+; Input:
+; current_waypoint_index = Current position in waypoint path
+; cur_route_size = Total number of waypoints in current path
+; Output:
+; current_waypoint_index = Incremented to next waypoint
 advance_waypoint:
     push r16
     push r17
@@ -162,7 +191,15 @@ aw_not_done:
 ; HANDLE_OBSERVATION_POINT_ARRIVAL
 ; Called when drone reaches an observation point
 ; Starts hovering, checks for accident, generates next path
-
+; Input:
+; route_index = Current observation point number
+; main_crash_site_found = Whether accident already found
+; Output:
+; hovering_counter = Set to 50 (5 second hover at 0.1s ticks)
+; main_crash_site_found = Set to 1 if accident visible
+; drone_state = Set to 'A' if accident found
+; cur_route_locations = New path to next observation point
+; cur_route_size = Number of waypoints in new path
 handle_observation_point_arrival:
     push r16
     
