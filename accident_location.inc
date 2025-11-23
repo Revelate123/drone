@@ -1,6 +1,14 @@
-
+; This file contains functions for checking if the accident location has been seen.
 jmp accident_location_end
 
+; Checks if accident site is visible from drone's current position
+; Input:
+;   accident_x, accident_y (memory) = accident coordinates
+;   drone_current_x, drone_current_y, drone_altitude (memory) = drone position
+;   vis_val (memory) = visibility range
+; Output:
+;   main_crash_site_found (memory) = 1 if found and visible
+;   drone_state (memory) = 'A' if found and visible
 check_accident_visible:
 check_accident_visible_prologue:
 	push r16
@@ -59,14 +67,18 @@ check_accident_visible_epligoue:
     sts main_crash_site_found, r16
     ldi r16, 'A'
 	sts drone_state, r16 ; Set search result flag
-    
-    
+      
 not_found_al:
 	pop r17
     pop r16
     ret
 
-
+; Displays crash location on LCD line 2 in format "(X,Y)"
+; Handles single digits (0-9), double digits (10-15), and '*' for unknown coordinates
+; Input:
+;   crash_x, crash_y (memory) = crash coordinates or '*' for unknown
+; Output:
+;   LCD line 2 displays crash location
 display_crash_location:
     push r16
 	push r17
@@ -83,7 +95,6 @@ clear_bottom_row:
     dec r17
     brne clear_bottom_row
 
-    
     ; Move cursor back to start of line 2
     do_lcd_command 0b11000000  ; 0xC0 = line 2, position 0
 

@@ -1,3 +1,5 @@
+; This file contains the function for finding the path between two points
+; This is based on the project hints from Brian.
 
 jmp end_path_between_two_points
 
@@ -9,14 +11,7 @@ jmp end_path_between_two_points
 .def x2 = r22
 .def y2 = r23
 
-; Save point in memory with the points between 2 points (max 20)
-; Check if have found the accident location??
-; Parameters:
-	; r20 - x1
-	; r21 - y1
-	; r22 - x2
-	; r23 - y2
-; Will load the path in memory location: cur_route_locations
+; Save point in memory with the points between 2 points (max 30)
 ; Cases:
 	; Case 1: curx == x2: 
 		; If cur_y < y2, increase cur_y
@@ -31,6 +26,15 @@ jmp end_path_between_two_points
 		; b. y-coordinate:
 			; If cur_y < y2, increase cur_y
 			; Else, decrease cur_y
+; Check if have found the accident location??
+; Input:
+	; r20 - x1
+	; r21 - y1
+	; r22 - x2
+	; r23 - y2
+; Output 
+;	cur_route_locations (memory) - Will load the path in memory location
+
 path_between_two_points:
 path_between_two_points_prologue:
 	push ZL

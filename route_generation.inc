@@ -1,24 +1,10 @@
-; assignment_route_generation.asm
-;
-; Created: 6/11/2025 9:55:34 AM
-; Author : mbast
-;
+; This file contains functions for calculating the route.
+; It provides the interface function generate_route.
 
 jmp end_route_generation
 
 .include "m2560def.inc"
 .include "visibility.inc"
-
-; We will save in memory 
-; 1. Create a seen vector in data memory. This will let us know 2 things:
-	; a. Where to search next - we can just pick the next closest 
-	; b. Determine when we can stop the search algorithm (when every location has been visited)
-; 2. Have a spot in memory for the points we are picking to visit -> this will be route 
-
-; Functions:
-; - Done searching
-; - Mark visible locations
-; - Closest unseen location
 
 .def fully_explored_flag = r15
 .def temp = r16
@@ -45,10 +31,13 @@ jmp end_route_generation
 		; 3. Update the explored map in memory (essentially visited matrix)
 		; 4. Find the next unseen location (update, x_idx, and y_idx) and repeat
 	; Stop the route if found is set: this will be set after the visibility function is called
+; Input:
+;	None
+; Output:
+;	route_locations (memory) - Route saved in route_locations
 generate_route:
 generate_route_prologue:
-	; Save all of the registers that I am using
-	
+	; Save all of the registers that gets used
 	push XL
 	push XH
 	push YL
@@ -139,7 +128,6 @@ generate_route_body:
 			
 		no_crash:
 	
-
 		; 3. Update explored map
 		call update_explored_map
 
@@ -161,7 +149,6 @@ generate_route_body:
 			breq at_next_location
 
 			rjmp get_next_location_loop
-
 
 		at_next_location:
 		rjmp route_generation_loop
@@ -193,8 +180,6 @@ generate_route_epilogue:
 ;   r22 = y coordinate
 ; Output:
 ;   visibility_map updated
-; Modifies:
-;   r14, r15, r18, r19, r20 (and whatever check_visible_no_block modifies)
 setup_and_check_visibility:
 setup_and_check_visibility_prologue:
 	push r6
@@ -227,10 +212,6 @@ setup_and_check_visibility_body:
 	mul r14, r14
 	mov r14, r0
 	mov r15, r1
-	/*
-	ldi temp, 3*3
-	mov r14, temp
-	clr r15 */
 
 	; Now call the function with all parameters set
 	; call check_visible_no_block
@@ -243,16 +224,14 @@ setup_and_check_visibility_epilogue:
 	pop r6
 	ret
 
-; Copies the new seen locations from the visibility map to the explored map
-	; Only updates if visibility map = 1 and explored map = 0
-; Params : None
-; Uses registers:
-; r16 = temp
-; r17 = counter
-; r26 = XL
-; r27 = XH
-; r28 = YL
-; r29 = YH
+; Copies newly visible locations from visibility map to explored map
+; Only updates explored map entries that are 0 when visibility map is 1
+; Input:
+;   visibility_map_size (memory) = size of the map 
+;   visibility_map (memory) = current visibility status
+;   explored_map (memory) = cumulative exploration status
+; Output:
+;   explored_map (memory) = updated with new visible locations set to 1
 update_explored_map:
 update_explored_map_prologue:
 	push XL
@@ -301,15 +280,12 @@ update_explored_map_epilogue:
 	pop XL
 	ret
 
-
-; Checks if explored map is fully explored
-	; Will set the fully_explored_flag to 1
-; Params: None
-; Uses registers:
-; r16 = temp
-; r17 = counter
-; r28 = YL
-; r29 = YH
+; Checks if the explored map is fully explored - all entries are 1
+; Input:
+;   explored_map_size (memory) = size of the map
+;   explored_map (memory) = array of exploration status values
+; Output:
+;   fully_explored_flag = 1 if all map entries are 1, 0 otherwise
 check_fully_explored:
 check_fully_explored_prologue:
 	push YL
@@ -349,12 +325,12 @@ check_fully_explored_epilogue:
 	ret
 
 
-; Fill the route with Z values from the main map
-; Parameters: None
-; Modifies the route in place
-; Uses regs:
-; r17 = counter
-; r31:30 = point to DRAM location of the route
+; Fills Z coordinates in the route by looking up values from the main map
+; Input:
+;   route_size (memory) = number of waypoints in route
+;   route (memory) = array of (X, Y, Z) with Z values uninitialised
+; Output:
+;   route (memory) = Z values filled in for each waypoint using get_value_at_coords
 input_z_values:
 input_z_values_prologue:
 	push ZL
@@ -394,10 +370,11 @@ input_z_values_epilogue:
 	pop ZL
 	ret
 
-
-
-
-; Clears the visibility map
+; Clears the explored map by setting all entries to 0
+; Input:
+;   explored_map_size (memory) = size of the map (will be squared)
+; Output:
+;   explored_map (memory) = all entries set to 0
 clear_explored_map:
 clear_explored_map_prologue:
 	push YL
