@@ -14,8 +14,19 @@ jmp end_movement
 
 ; UPDATE_DRONE_POSITION 
 ; Moves drone toward CURRENT WAYPOINT using speed control
-; Returns: r16 = 0 (still moving), 1 (arrived at waypoint)
-
+; Input:
+; drone_state = Current state 
+; drone_speed = Movement speed in dm/s
+; movement_accumulator = Speed accumulator
+; current_waypoint_index = Index of target waypoint
+; cur_route_locations = Array of waypoints
+; Output:
+; r16 = 0 (still moving) or 1 (arrived at waypoint)
+; drone_current_x = Updated X position
+; drone_current_y = Updated Y position
+; movement_accumulator = Updated accumulator value
+; drone_target_x = Current waypoint X
+; drone_target_y = Current waypoint Y
 update_drone_position:
 update_drone_position_prologue:
     push r17
@@ -84,6 +95,12 @@ update_drone_position_epilogue:
 
 ; LOAD_CURRENT_WAYPOINT_AS_TARGET
 ; Loads the current waypoint from cur_route_locations into drone_target_x/y
+; Input:
+; current_waypoint_index = Index of waypoint to load
+; cur_route_locations = Array of waypoints (x,y)
+; Output:
+; drone_target_x = Waypoint X coordinate
+; drone_target_y = Waypoint Y coordinate
 load_current_waypoint_as_target:
     push ZL
     push ZH
@@ -118,6 +135,12 @@ load_current_waypoint_as_target:
 ; MOVE_ONE_STEP_TO_TARGET
 ; Moves drone one step toward drone_target_x/y
 ; directly set position to target (since waypoints are adjacent)
+; Input:
+; drone_target_x = Target X coordinate
+; drone_target_y = Target Y coordinate
+; Output:
+; drone_current_x = Set to target X
+; drone_current_y = Set to target Y
 move_one_step_to_target:
     push r16
     
@@ -134,6 +157,13 @@ move_one_step_to_target:
 ; CHECK_AT_TARGET_XY
 ; Checks if drone's XY position matches target XY
 ; Returns: r16 = 1 if at target, 0 otherwise
+; Input:
+; drone_current_x = Drone X position
+; drone_current_y = Drone Y position
+; drone_target_x = Target X position
+; drone_target_y = Target Y position
+; Output:
+;   r16 = 1 if at target, 0 otherwise
 check_at_target_xy:
     push r17
     push r18
