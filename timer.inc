@@ -5,7 +5,7 @@ jmp end_timer
 
 
 ; INIT_SIMULATION_TIMER
-; Configures Timer1 for 0.5-second simulation ticks (2 Hz)
+; Configures Timer1 for 0.1-second simulation ticks (10 Hz)
 ; Uses CTC mode with OCR1A compare match
 init_simulation_timer:
 init_simulation_timer_prologue:
