@@ -80,6 +80,13 @@ rjmp end_of_file
 	do_lcd_command 0b00000010
 .endmacro
 
+
+; Displays a message to the lcd reset_screen
+; Inputs:
+;   @0 = location in program memory of the string
+;   @1 = set to 1 to return cursor to home, 0 to leave at current location
+; Outputs:
+;   Prints a string to the LCD
 .macro input_msg_to_display
 	; @0 is the message from pmem
 	; assuming it fits 16 chars
@@ -106,6 +113,9 @@ rjmp end_of_file
 
 .endmacro
 
+
+; Used with the Macro input_msg_to_display, prints all characters to the LCD
+; Inputs:
 print_multiple:
 	clr r17
 print_loop:
