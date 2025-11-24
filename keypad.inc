@@ -322,7 +322,7 @@ get_y1:
 	cpi r16, '9'+1
 	brsh get_y1
 
-	do_lcd_data_from_reg r16		; TODO: save r16 value here!!!
+	do_lcd_data_from_reg r16		
 	subi r16, '0'
 	mov r17, r16
 

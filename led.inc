@@ -1,5 +1,5 @@
 
-; led.inc
+; Configures the LED
 
 
 jmp end_led

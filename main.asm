@@ -1,9 +1,5 @@
-; Assignment.asm
 ;
-; Created: 26/10/2025 7:19:05 am
-; Author : thoma
-;
-; LED functions are for testing without LCD 
+; Main driver file of our program
 .include "m2560def.inc"
 
 .equ main_map_memory_start = 0x0206
@@ -83,11 +79,6 @@ RESET:
 ; ============================================================================
 ; User Input Section
 ; ============================================================================
-
-
-
-
-
 
 ; ============================================================================
 ; MAIN SETUP
