@@ -1,12 +1,14 @@
-
-; keypad_simple.inc 
+; Contains functions relating to the keypad including get_crash and get_visibility_value.
 
 
 jmp end_keypad_simple
 
 
 ; PROCESS_KEY_NO_PAUSE - Altitude and Speed only (NOT pause)
-
+; Inputs:
+;   r16 = ascii value of key press
+; Outputs:
+;   Changes the corresponding drone attribute.
 process_key_no_pause:
     push r17
     
@@ -67,6 +69,10 @@ process_key_end:
 
 
 ; INIT_KEYPAD
+; Inputs:
+;   None
+; Outputs:
+;   Keypad is initialised
 init_keypad_simple:
     push r16
     
@@ -80,8 +86,12 @@ init_keypad_simple:
     ret
 
 
-; SCAN_KEYPAD_SIMPLE
-; Returns: r16 = ASCII character or 0xFF if no key
+; Scans the keypad to check if a key was pressed. Requires the keypad is 
+; initialised.
+; Inputs:
+;   None
+; Outputs:
+;   r16 = ASCII character or 0xFF if no key
 scan_keypad_simple:
     push r17
     push r18
@@ -173,6 +183,11 @@ scan_end:
     pop r17
     ret
 
+; creates a delay.
+; Inputs:
+;   None
+; Outputs:
+;   Delay is created.
 wait_key_release:
 	call delay_
 wait_release_loop:
@@ -203,6 +218,11 @@ delay_inner:
 	pop r22
 	ret
 
+; Prints message to the LCD screen
+; Inputs:
+;   None
+; Outputs:
+;   Message printed to LCD screen
 printing_initial_display_1:
 msg_location: .db "map(M*M); M=",0
 	input_msg_to_display msg_location, 0
@@ -233,10 +253,13 @@ printing_initial_display_1_epilogue:
 	input_msg_to_display msg_location_1, 0
 	ret
 
+
+; Displays prompt on LCD screen and accepts user inputed crash location.
+; Inputs:
+;   User presses keys.
+; Outputs:
+;   crash location stored in memory and displayed to screen.
 get_crash_xy:
-; using keypad for user input
-; showing keypad presses into lcd and saves it to memory
-; saves it in r17 before putting it to memory
 	rcall printing_initial_display_1
 get_crash_xy_prologue:
 	push r16						; used for taking value of scan_keypad_simple
@@ -342,6 +365,12 @@ get_crash_xy_epilogue:
 	pop r16
 	ret
 
+
+; Displays prompt on LCD screen and accepts user inputed visibility value.
+; Inputs:
+;   User presses keys.
+; Outputs:
+;   vis_val stored in memory and displayed to screen.
 get_visibility_value:
 ; using keypad for user input
 ; showing keypad presses into lcd and saves it to memory
