@@ -178,9 +178,9 @@ done_waiting_for_pb1:
 	ldi r16, 1
 	sts accident_y, r16
 	*/
-; ============================================================================
-; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING (FIXED BRANCHES)
-; ============================================================================
+; =============================================
+; MAIN LOOP - WITH CONTINUOUS KEYPAD POLLING 
+; =============================================
 clr r16
 sts route_index, r16
 call handle_observation_point_arrival
@@ -190,15 +190,18 @@ main_loop:
     ; ========================================
     ; KEYPAD POLLING LOOP (while waiting for tick)
     ; ========================================
+
 wait_for_tick:
     ; Scan keypad
     call scan_keypad_simple
 	call update_height
 	call update_speed
 	call update_status
+
     ; ========================================
     ; HANDLE PAUSE (Key 0) - Special case
     ; ========================================
+
     cpi r16, '0'
     brne not_pause_key
     
@@ -223,10 +226,11 @@ not_pause_key:
     ; Was paused, now resume
     ldi r17, 'F'
     sts drone_state, r17
-    
+
     ; ========================================
     ; HANDLE OTHER KEYS (Altitude/Speed)
     ; ========================================
+
 check_other_keys:
     ; Check if any key pressed
     cpi r16, 0xFF
@@ -265,7 +269,7 @@ check_tick:
     brne wait_for_tick
     
     ; ========================================
-    ; TICK PROCESSING (once per 0.5 seconds)
+    ; TICK PROCESSING (once per 0.1 seconds)
     ; ========================================
     
     ; Clear tick flag
@@ -330,7 +334,7 @@ not_hovering:
 	cpi r16, 'A'
 	breq accident_location_found
     
-    ; Check if paused - INVERTED CONDITION
+    ; Check if paused 
     cpi r16, 'P'
     brne continue_flying
     rjmp tick_done              ; ? Paused, skip movement
