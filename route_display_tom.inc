@@ -1,9 +1,6 @@
-;
-; Test.asm
-;
-; Created: 10/10/2025 11:56:26 pm
-; Author : thoma
-;
+; This file contains code for displaying routes both before the simulation begins
+; (continuous scrolling) and during the simulation (path locations between observation
+;  points)
 
 
 rjmp end_route_display_tom
@@ -12,6 +9,13 @@ rjmp end_route_display_tom
 .def cur_x = r20
 .def cur_y = r21
 .def cur_z = r22
+; Stores the observation points in data memory for use with 
+; continuous scrolling of route before simulation starts
+; Inputs:
+;   None
+; Outputs:
+;   Stores route characters in data memory
+;   Changes the Y registers
 store_display_route:
 store_display_route_prologue:
 push XL
@@ -66,6 +70,14 @@ pop XH
 pop XL
 ret
 
+; Stores the observation points in data memory for the purpose
+; of displaying path locations during simulation. Locations are stored in the
+; format [Number of chars][location][Number of chars][location]...
+; Inputs:
+;   None
+; Outputs:
+;   Stores route characters in data memory
+;   Changes the Y registers 
 store_display_route2:
 store_display_route2_prologue:
 push XL
@@ -149,6 +161,13 @@ ret
 
 .def pointer = r18
 .def counter = r19
+; Displays the first 16 characters of the route. This function should only be called
+; once. Afterwards, update_display_route should be called to progress the route.
+; Inputs:
+;   None
+; Outputs:
+;   Displays characters to the LCD
+;   The Y register points to the next character to be displayed.
 display_route_points_tom:
 display_route_points_prologue:
 push r16
@@ -157,9 +176,9 @@ push r20
 push r21
 display_route_points_body:
 call store_display_route ; stores char_count in r17
-// We want to fill 16 chars of the lcd and then push and pop from the ends
-	ldi YL, low(cur_route_display)
-	ldi YH, high(cur_route_display)
+
+ldi YL, low(cur_route_display)
+ldi YH, high(cur_route_display)
 //repeatedly fill with chars 16 times.
 do_lcd_command 0b00001100
 do_lcd_command 0b00110100
@@ -192,6 +211,15 @@ display_route_points_epilogue:
 	pop r16
 	ret
 
+
+; Displays the next character in the route to the LCD screen.
+; If there are no more characters wraps around to start of route.
+; Inputs:
+;   Y register = points to next character to be displayed.
+; Outputs:
+;   LCD screen displays next character at the top right of the screen
+;      and shifts other characters over.
+;   Updates the Y registers
 update_display_route:
 update_display_route_prologue:
 push r16
@@ -222,17 +250,11 @@ update_display_route_epilogue:
 	ret
 
 
-
-
-
-
-
-
-
-
-
-
-
+; Displays the current route to the top row of the LCD screen during simulation
+; Inputs:
+;   None
+; Outputs:
+;   Displays characters to the LCD 
 display_route_points_tom2:
 display_route_points2_prologue:
 push r16
@@ -278,10 +300,12 @@ display_route_points2_epilogue:
 	ret
 
 
-
-
-
-
+; Moves the current route display forward by one location. Relies on the 
+; stored number of characters preceding each location in data memory.
+; Inputs:
+;   None 
+; Outputs:
+;   LCD display changed.
 update_display_route1:
 update_display_route_prologue1:
 push r16
@@ -331,20 +355,20 @@ update_display_route_epilogue2:
 
 
 
-
-
-
-
-
-
-
-
 .def input_value=R16
 .def sign=R17					
 .def hundreds=R18				
 .def tens=R19
 .def ones=R20
-
+; Converts numbers into their equivalent ascii value and stores them in the location
+; pointed to by register Y and increments the character count in r17
+; Inputs:
+;   Y registers = location of next character to be stored in route_between_points
+;   r17 = char count
+; Outputs:
+;   Y register changed
+;   r17 changed.
+;   Ascii characters stored in data memory
 number_to_ascii:
 number_to_ascii_prologue:
 push r16
