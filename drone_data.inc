@@ -5,44 +5,44 @@
 jmp end_drone_data
 
 .dseg
-; Drone data starts at 0x07AD (after cur_route_locations)
+; Drone data 
 
-drone_current_x: .byte 1          ; 0x07AD
-drone_current_y: .byte 1          ; 0x07AE
-drone_altitude: .byte 1           ; 0x07AF
+drone_current_x: .byte 1         
+drone_current_y: .byte 1          
+drone_altitude: .byte 1         
 
-drone_target_x: .byte 1           ; 0x07B0
-drone_target_y: .byte 1           ; 0x07B1
-drone_target_z: .byte 1           ; 0x07B2
+drone_target_x: .byte 1          
+drone_target_y: .byte 1          
+drone_target_z: .byte 1         
 
-drone_speed: .byte 1              ; 0x07B3
+drone_speed: .byte 1             
 
-drone_state: .byte 1              ; 0x07B4
-hovering_counter: .byte 1         ; 0x07B5
-hover_complete_flag: .byte 1      ; 0x07B6 (Not Used)
-search_result: .byte 1            ; 0x07B7 (Not Used)
-simulation_counter: .byte 2       ; 0x07B8-0x07B9
+drone_state: .byte 1             
+hovering_counter: .byte 1         
+hover_complete_flag: .byte 1      ;  (Not Used)
+search_result: .byte 1            ;  (Not Used)
+simulation_counter: .byte 2      
 
-simulation_tick_flag: .byte 1     ; 0x07BA
+simulation_tick_flag: .byte 1  
 
-movement_accumulator: .byte 1     ; 0x07BB
+movement_accumulator: .byte 1    
 
-route_index: .byte 1              ; 0x07BC
+route_index: .byte 1             
 
 ; For storing the route location from
 ; which the accident location is visible
-accident_x: .byte 1               ; 0x07BD
-accident_y: .byte 1               ; 0x07BE
-visibility_distance: .byte 2      ; 0x07BF-0x07C0 (Not Used)
+accident_x: .byte 1               
+accident_y: .byte 1              
+visibility_distance: .byte 2      ; (Not Used)
 
-led_flash_counter: .byte 1        ; 0x07C1
-led_state: .byte 1                ; 0x07C2
+led_flash_counter: .byte 1        ; 
+led_state: .byte 1                ; 
 
-last_key_pressed: .byte 1         ; 0x07C3
+last_key_pressed: .byte 1         ; 
 
-distance_to_target: .byte 1       ; 0x07C4 (Not Used)
-current_mountain_height: .byte 1  ; 0x07C5 (Not Used)
-current_waypoint_index: .byte 1   ; 0x07C6  
+distance_to_target: .byte 1       ;  (Not Used)
+current_mountain_height: .byte 1  ;  (Not Used)
+current_waypoint_index: .byte 1  
 
 found_crash_site: .byte 1 
 
